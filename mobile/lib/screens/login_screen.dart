@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -86,7 +84,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               icon: const Icon(Icons.g_mobiledata),
               label: const Text('Continuar con Google'),
             ),
-            if (!kIsWeb && Platform.isIOS) ...[
+            if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) ...[
               const SizedBox(height: 8),
               SignInWithAppleButton(
                 onPressed: () async {
