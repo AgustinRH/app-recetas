@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../config.dart';
@@ -15,7 +16,9 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final email = TextEditingController(text: 'demo@dishtoday.app');
+  final email = TextEditingController(
+    text: AppConfig.useDevAuth ? 'demo@dishtoday.app' : '',
+  );
   final password = TextEditingController();
 
   @override
@@ -103,11 +106,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Text(auth.error!, style: const TextStyle(color: Colors.red)),
             ],
             const SizedBox(height: 24),
-            Text(
-              AppConfig.useDevAuth
-                  ? 'Demo: demo@dishtoday.app (sin Firebase)'
-                  : 'Email, Google o Apple',
-              textAlign: TextAlign.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () => context.push('/privacidad'),
+                  child: const Text('Privacidad'),
+                ),
+                Text('·', style: TextStyle(color: ink.withValues(alpha: 0.4))),
+                TextButton(
+                  onPressed: () => context.push('/condiciones'),
+                  child: const Text('Condiciones'),
+                ),
+              ],
             ),
           ],
         ),

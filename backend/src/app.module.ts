@@ -15,6 +15,10 @@ import { RedisModule } from './redis/redis.module';
 import { SearchModule } from './search/search.module';
 import { StorageModule } from './storage/storage.module';
 import { SeedModule } from './seed/seed.module';
+import { ShoppingModule } from './shopping/shopping.module';
+import { AdminModule } from './admin/admin.module';
+import { PlannerModule } from './planner/planner.module';
+import { ReportsModule } from './reports/reports.module';
 
 function typeOrmConfig(config: ConfigService): TypeOrmModuleOptions {
   const dbType = config.get<string>('DB_TYPE') ?? 'postgres';
@@ -56,7 +60,11 @@ function typeOrmConfig(config: ConfigService): TypeOrmModuleOptions {
     IngredientsModule,
     PantryModule,
     RecipesModule,
+    ShoppingModule,
     SeedModule,
+    AdminModule,
+    PlannerModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [

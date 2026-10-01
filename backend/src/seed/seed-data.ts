@@ -11,6 +11,12 @@ export type RecipeSeed = {
   cuisine: string;
   dietTags: string[];
   calories: number;
+  servings?: number;
+  difficulty?: 'fácil' | 'media' | 'difícil';
+  /** Macros por ración (g). */
+  protein?: number;
+  carbs?: number;
+  fat?: number;
   ingredients: { name: string; quantity: number; unit: string; optional?: boolean }[];
   steps: string[];
 };
@@ -73,6 +79,75 @@ export const INGREDIENT_SEEDS: IngredientSeed[] = [
   { name: 'Huevos', category: 'Otros', aliases: ['huevo'] },
   { name: 'Albahaca', category: 'Otros', aliases: [] },
   { name: 'Perejil', category: 'Otros', aliases: [] },
+  // ── Ampliación del catálogo (pescados, carnes, verduras, básicos de despensa) ──
+  { name: 'Dorada', category: 'Pescados', aliases: [] },
+  { name: 'Lubina', category: 'Pescados', aliases: [] },
+  { name: 'Merluza', category: 'Pescados', aliases: [] },
+  { name: 'Sardinas', category: 'Pescados', aliases: ['sardina'] },
+  { name: 'Boquerones', category: 'Pescados', aliases: ['anchoas', 'boquerón'] },
+  { name: 'Gambas', category: 'Pescados', aliases: ['langostinos', 'camarones'] },
+  { name: 'Calamares', category: 'Pescados', aliases: ['calamar', 'chipirones'] },
+  { name: 'Mejillones', category: 'Pescados', aliases: ['mejillón'] },
+  { name: 'Pulpo', category: 'Pescados', aliases: [] },
+  { name: 'Trucha', category: 'Pescados', aliases: [] },
+  { name: 'Pavo', category: 'Carnes', aliases: ['pechuga de pavo'] },
+  { name: 'Cordero', category: 'Carnes', aliases: [] },
+  { name: 'Conejo', category: 'Carnes', aliases: [] },
+  { name: 'Chorizo', category: 'Carnes', aliases: [] },
+  { name: 'Jamón', category: 'Carnes', aliases: ['jamon', 'jamón serrano'] },
+  { name: 'Jamón cocido', category: 'Carnes', aliases: ['jamón york', 'york'] },
+  { name: 'Carne picada', category: 'Carnes', aliases: ['carne molida'] },
+  { name: 'Salchichas', category: 'Carnes', aliases: ['salchicha'] },
+  { name: 'Champiñones', category: 'Verduras', aliases: ['champiñón', 'setas'] },
+  { name: 'Berenjena', category: 'Verduras', aliases: [] },
+  { name: 'Brócoli', category: 'Verduras', aliases: ['brocoli'] },
+  { name: 'Coliflor', category: 'Verduras', aliases: [] },
+  { name: 'Judías verdes', category: 'Verduras', aliases: ['judias verdes', 'ejotes'] },
+  { name: 'Maíz', category: 'Verduras', aliases: ['maiz', 'elote'] },
+  { name: 'Col', category: 'Verduras', aliases: ['repollo'] },
+  { name: 'Alcachofa', category: 'Verduras', aliases: ['alcachofas'] },
+  { name: 'Espárragos', category: 'Verduras', aliases: ['esparragos'] },
+  { name: 'Boniato', category: 'Verduras', aliases: ['batata', 'camote'] },
+  { name: 'Calabaza', category: 'Verduras', aliases: [] },
+  { name: 'Rúcula', category: 'Verduras', aliases: ['rucula'] },
+  { name: 'Naranja', category: 'Frutas', aliases: ['naranjas'] },
+  { name: 'Pera', category: 'Frutas', aliases: [] },
+  { name: 'Uvas', category: 'Frutas', aliases: ['uva'] },
+  { name: 'Melocotón', category: 'Frutas', aliases: ['melocoton', 'durazno'] },
+  { name: 'Sandía', category: 'Frutas', aliases: ['sandia'] },
+  { name: 'Melón', category: 'Frutas', aliases: ['melon'] },
+  { name: 'Piña', category: 'Frutas', aliases: ['piña natural'] },
+  { name: 'Mango', category: 'Frutas', aliases: [] },
+  { name: 'Kiwi', category: 'Frutas', aliases: [] },
+  { name: 'Quinoa', category: 'Cereales', aliases: [] },
+  { name: 'Cuscús', category: 'Cereales', aliases: ['cuscus', 'couscous'] },
+  { name: 'Pan rallado', category: 'Cereales', aliases: [] },
+  { name: 'Tortillas de trigo', category: 'Cereales', aliases: ['tortillas'] },
+  { name: 'Maicena', category: 'Cereales', aliases: ['almidón de maíz'] },
+  { name: 'Levadura', category: 'Cereales', aliases: ['levadura química'] },
+  { name: 'Tofu', category: 'Legumbres', aliases: [] },
+  { name: 'Curry', category: 'Especias', aliases: ['curry en polvo'] },
+  { name: 'Cúrcuma', category: 'Especias', aliases: ['curcuma'] },
+  { name: 'Jengibre', category: 'Especias', aliases: [] },
+  { name: 'Tomillo', category: 'Especias', aliases: [] },
+  { name: 'Romero', category: 'Especias', aliases: [] },
+  { name: 'Guindilla', category: 'Especias', aliases: ['chile', 'cayena'] },
+  { name: 'Nuez moscada', category: 'Especias', aliases: [] },
+  { name: 'Vainilla', category: 'Especias', aliases: ['esencia de vainilla'] },
+  { name: 'Tomate frito', category: 'Condimentos', aliases: ['salsa de tomate'] },
+  { name: 'Mayonesa', category: 'Condimentos', aliases: [] },
+  { name: 'Mostaza', category: 'Condimentos', aliases: [] },
+  { name: 'Ketchup', category: 'Condimentos', aliases: [] },
+  { name: 'Vino blanco', category: 'Condimentos', aliases: [] },
+  { name: 'Vino tinto', category: 'Condimentos', aliases: [] },
+  { name: 'Aceite de girasol', category: 'Condimentos', aliases: [] },
+  { name: 'Cacao', category: 'Condimentos', aliases: ['cacao en polvo'] },
+  { name: 'Chocolate', category: 'Otros', aliases: ['chocolate negro'] },
+  { name: 'Nueces', category: 'Otros', aliases: ['nuez'] },
+  { name: 'Almendras', category: 'Otros', aliases: ['almendra'] },
+  { name: 'Aceitunas', category: 'Otros', aliases: ['olivas'] },
+  { name: 'Café', category: 'Otros', aliases: ['cafe'] },
+  { name: 'Agua', category: 'Otros', aliases: [] },
 ];
 
 export const RECIPE_SEEDS: RecipeSeed[] = [
@@ -83,6 +158,7 @@ export const RECIPE_SEEDS: RecipeSeed[] = [
     cuisine: 'Española',
     dietTags: ['vegetariana'],
     calories: 420,
+    servings: 4, difficulty: 'media', protein: 16, carbs: 30, fat: 24,
     ingredients: [
       { name: 'Huevos', quantity: 6, unit: 'ud' },
       { name: 'Patata', quantity: 4, unit: 'ud' },
@@ -103,6 +179,7 @@ export const RECIPE_SEEDS: RecipeSeed[] = [
     cuisine: 'Mediterránea',
     dietTags: ['vegana', 'sin gluten'],
     calories: 180,
+    servings: 2, difficulty: 'fácil', protein: 3, carbs: 12, fat: 13,
     ingredients: [
       { name: 'Lechuga', quantity: 1, unit: 'ud' },
       { name: 'Tomate', quantity: 2, unit: 'ud' },
@@ -123,6 +200,7 @@ export const RECIPE_SEEDS: RecipeSeed[] = [
     cuisine: 'Italiana',
     dietTags: ['vegetariana'],
     calories: 510,
+    servings: 2, difficulty: 'fácil', protein: 16, carbs: 68, fat: 20,
     ingredients: [
       { name: 'Pasta', quantity: 250, unit: 'g' },
       { name: 'Albahaca', quantity: 1, unit: 'manojo' },
@@ -143,6 +221,7 @@ export const RECIPE_SEEDS: RecipeSeed[] = [
     cuisine: 'Española',
     dietTags: ['sin gluten'],
     calories: 560,
+    servings: 4, difficulty: 'media', protein: 32, carbs: 60, fat: 16,
     ingredients: [
       { name: 'Arroz', quantity: 250, unit: 'g' },
       { name: 'Pollo', quantity: 400, unit: 'g' },
@@ -165,6 +244,7 @@ export const RECIPE_SEEDS: RecipeSeed[] = [
     cuisine: 'Española',
     dietTags: ['vegana', 'sin gluten'],
     calories: 160,
+    servings: 4, difficulty: 'fácil', protein: 3, carbs: 14, fat: 10,
     ingredients: [
       { name: 'Tomate', quantity: 6, unit: 'ud' },
       { name: 'Pepino', quantity: 1, unit: 'ud' },
@@ -185,6 +265,7 @@ export const RECIPE_SEEDS: RecipeSeed[] = [
     cuisine: 'Internacional',
     dietTags: ['vegetariana', 'sin gluten', 'keto'],
     calories: 280,
+    servings: 1, difficulty: 'fácil', protein: 19, carbs: 2, fat: 22,
     ingredients: [
       { name: 'Huevos', quantity: 3, unit: 'ud' },
       { name: 'Mantequilla', quantity: 10, unit: 'g' },
@@ -202,6 +283,7 @@ export const RECIPE_SEEDS: RecipeSeed[] = [
     cuisine: 'Mexicana',
     dietTags: ['vegana', 'sin gluten', 'keto'],
     calories: 220,
+    servings: 2, difficulty: 'fácil', protein: 3, carbs: 12, fat: 19,
     ingredients: [
       { name: 'Aguacate', quantity: 2, unit: 'ud' },
       { name: 'Tomate', quantity: 1, unit: 'ud' },
@@ -221,6 +303,7 @@ export const RECIPE_SEEDS: RecipeSeed[] = [
     cuisine: 'Española',
     dietTags: ['vegana', 'sin gluten'],
     calories: 390,
+    servings: 4, difficulty: 'media', protein: 22, carbs: 55, fat: 7,
     ingredients: [
       { name: 'Lentejas', quantity: 300, unit: 'g' },
       { name: 'Zanahoria', quantity: 2, unit: 'ud' },
@@ -242,6 +325,7 @@ export const RECIPE_SEEDS: RecipeSeed[] = [
     cuisine: 'Española',
     dietTags: ['vegana'],
     calories: 210,
+    servings: 1, difficulty: 'fácil', protein: 5, carbs: 30, fat: 8,
     ingredients: [
       { name: 'Pan', quantity: 4, unit: 'rebanadas' },
       { name: 'Tomate', quantity: 2, unit: 'ud' },
@@ -261,6 +345,7 @@ export const RECIPE_SEEDS: RecipeSeed[] = [
     cuisine: 'Internacional',
     dietTags: ['vegetariana', 'sin gluten'],
     calories: 240,
+    servings: 1, difficulty: 'fácil', protein: 9, carbs: 35, fat: 5,
     ingredients: [
       { name: 'Yogur', quantity: 200, unit: 'g' },
       { name: 'Plátano', quantity: 1, unit: 'ud' },

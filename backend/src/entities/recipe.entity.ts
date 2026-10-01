@@ -40,8 +40,26 @@ export class Recipe {
   @Column({ type: 'simple-json' })
   dietTags: string[] = [];
 
+  /** Calorías por ración. */
   @Column({ type: 'float', nullable: true })
   calories: number | null;
+
+  /** Macros por ración, en gramos. */
+  @Column({ type: 'float', nullable: true })
+  protein: number | null;
+
+  @Column({ type: 'float', nullable: true })
+  carbs: number | null;
+
+  @Column({ type: 'float', nullable: true })
+  fat: number | null;
+
+  @Column({ type: 'int', default: 2 })
+  servings: number;
+
+  /** 'fácil' | 'media' | 'difícil' */
+  @Column({ default: 'fácil' })
+  difficulty: string;
 
   @CreateDateColumn()
   createdAt: Date;

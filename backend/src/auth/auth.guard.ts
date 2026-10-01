@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../common/public.decorator';
+import { IS_OPTIONAL_AUTH } from '../common/optional-auth.decorator';
 import { UsersService } from '../users/users.service';
 import { FirebaseService } from './firebase.service';
 
@@ -25,10 +26,18 @@ export class AuthGuard implements CanActivate {
       context.getClass(),
     ]);
     if (isPublic) return true;
+    const optional = this.reflector.getAllAndOverride<boolean>(IS_OPTIONAL_AUTH, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     const request = context.switchToHttp().getRequest();
     const header = request.headers.authorization as string | undefined;
     if (!header?.startsWith('Bearer ')) {
+      if (optional) {
+        request.user = null;
+        return true;
+      }
       throw new UnauthorizedException('Missing bearer token');
     }
     const token = header.slice(7).trim();
@@ -44,6 +53,9 @@ export class AuthGuard implements CanActivate {
         email,
         displayName: email.split('@')[0],
       });
+      if (request.user.banned) {
+        throw new UnauthorizedException('Cuenta suspendida');
+      }
       return true;
     }
 
@@ -58,6 +70,9 @@ export class AuthGuard implements CanActivate {
         displayName: decoded.name ?? null,
         avatarUrl: decoded.picture ?? null,
       });
+      if (request.user.banned) {
+        throw new UnauthorizedException('Cuenta suspendida');
+      }
       return true;
     } catch {
       throw new UnauthorizedException('Invalid token');

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 import { CurrentUser } from '../common/current-user.decorator';
+import { OptionalAuth } from '../common/optional-auth.decorator';
 import { User } from '../entities/user.entity';
 import { RecipesService } from './recipes.service';
 
@@ -37,11 +38,17 @@ export class SocialController {
     return this.recipes.toggleSave(user.id, id, true);
   }
 
+  @Post(':id/cooks')
+  cook(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.recipes.markCooked(user.id, id);
+  }
+
   @Delete(':id/saves')
   unsave(@CurrentUser() user: User, @Param('id') id: string) {
     return this.recipes.toggleSave(user.id, id, false);
   }
 
+  @OptionalAuth()
   @Get(':id/comments')
   comments(@Param('id') id: string) {
     return this.recipes.listComments(id);

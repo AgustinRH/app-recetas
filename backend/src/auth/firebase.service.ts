@@ -37,6 +37,6 @@ export class FirebaseService implements OnModuleInit {
   }
 
   verifyIdToken(token: string) {
-    return getAuth().verifyIdToken(token);
+    return getAuth().verifyIdToken(token, true);
   }
 }

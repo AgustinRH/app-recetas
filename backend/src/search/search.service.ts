@@ -96,6 +96,15 @@ export class SearchService implements OnModuleInit {
     }
   }
 
+  async removeRecipe(id: string) {
+    if (!this.client) return;
+    try {
+      await this.client.collections('recipes').documents(id).delete();
+    } catch {
+      /* the document may already be gone */
+    }
+  }
+
   async searchIngredients(q: string) {
     if (!this.client) return [];
     try {

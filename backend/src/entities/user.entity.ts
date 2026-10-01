@@ -27,6 +27,12 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   avatarUrl: string | null;
 
+  @Column({ default: false })
+  isAdmin: boolean;
+
+  @Column({ default: false })
+  banned: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -57,17 +58,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> loginGoogle() async {
     state = state.copy(loading: true, error: null);
     try {
-      final googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) {
-        state = state.copy(loading: false);
-        return;
+      final User user;
+      if (kIsWeb) {
+        final cred = await FirebaseAuth.instance.signInWithPopup(
+          GoogleAuthProvider(),
+        );
+        user = cred.user!;
+      } else {
+        final googleUser = await GoogleSignIn().signIn();
+        if (googleUser == null) {
+          state = state.copy(loading: false);
+          return;
+        }
+        final googleAuth = await googleUser.authentication;
+        final cred = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        user = (await FirebaseAuth.instance.signInWithCredential(cred)).user!;
       }
-      final googleAuth = await googleUser.authentication;
-      final cred = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      final user = (await FirebaseAuth.instance.signInWithCredential(cred)).user!;
       _api.setToken(await user.getIdToken());
       final profile = await _api.syncAuth(displayName: user.displayName);
       state = AuthState(profile: profile, loading: false);
@@ -145,7 +154,42 @@ final pantryProvider = FutureProvider<List<PantryItem>>((ref) async {
   return ref.read(apiProvider).pantry();
 });
 
+/// `true` mientras el onboarding va por el paso de la despensa: el usuario ya
+/// tiene nombre pero aún no debe salir de /onboarding.
+final onboardingPendingProvider = StateProvider<bool>((_) => false);
+
+/// Ruta a la que volver tras entrar, por ejemplo una receta compartida.
+final returnToProvider = StateProvider<String?>((_) => null);
+
+/// Filtros activos en el feed (tiempo, cocina, dieta).
+final feedFiltersProvider = StateProvider<RecipeFilters>(
+  (_) => const RecipeFilters(),
+);
+
+/// Orden del feed: `false` cronológico, `true` primero lo que se puede cocinar.
+final feedByMatchProvider = StateProvider<bool>((_) => false);
+
+/// Feed reducido a las recetas de la gente que sigues.
+final feedFollowingProvider = StateProvider<bool>((_) => false);
+
 final feedProvider = FutureProvider<List<RecipeCard>>((ref) async {
   ref.watch(authProvider);
-  return ref.read(apiProvider).feed();
+  final filters = ref.watch(feedFiltersProvider);
+  final following = ref.watch(feedFollowingProvider);
+  return ref.read(apiProvider).feed(filters: filters, following: following);
+});
+
+final cuisinesProvider = FutureProvider<List<String>>((ref) async {
+  ref.watch(authProvider);
+  return ref.read(apiProvider).cuisines();
+});
+
+final shoppingProvider = FutureProvider<List<ShoppingItem>>((ref) async {
+  ref.watch(authProvider);
+  return ref.read(apiProvider).shopping();
+});
+
+final statsProvider = FutureProvider<ProfileStats>((ref) async {
+  ref.watch(authProvider);
+  return ref.read(apiProvider).myStats();
 });

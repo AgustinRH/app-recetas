@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
 import { CurrentUser } from '../common/current-user.decorator';
 import { User } from '../entities/user.entity';
@@ -47,10 +47,20 @@ export class UsersController {
     return this.users.toPublic(fresh!);
   }
 
+  @Delete('me')
+  deleteMe(@CurrentUser() user: User) {
+    return this.users.deleteAccount(user);
+  }
+
   @Get('me')
   async me(@CurrentUser() user: User) {
     const fresh = await this.users.findById(user.id);
     return this.users.toPublic(fresh!);
+  }
+
+  @Get('me/stats')
+  stats(@CurrentUser() user: User) {
+    return this.users.stats(user.id);
   }
 
   @Patch('me')
@@ -73,5 +83,15 @@ export class UsersController {
         diets: preferences.diets,
       },
     };
+  }
+
+  @Post('users/:id/follow')
+  follow(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.users.setFollow(user.id, id, true);
+  }
+
+  @Delete('users/:id/follow')
+  unfollow(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.users.setFollow(user.id, id, false);
   }
 }

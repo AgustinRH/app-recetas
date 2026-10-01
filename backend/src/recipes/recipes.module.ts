@@ -7,6 +7,7 @@ import { Ingredient } from '../entities/ingredient.entity';
 import { Like } from '../entities/like.entity';
 import { Comment } from '../entities/comment.entity';
 import { SavedRecipe } from '../entities/saved-recipe.entity';
+import { CookedRecipe } from '../entities/cooked-recipe.entity';
 import { RecipesService } from './recipes.service';
 import { RecipesController } from './recipes.controller';
 import { SocialController } from './social.controller';
@@ -22,6 +23,7 @@ import { PantryModule } from '../pantry/pantry.module';
       Like,
       Comment,
       SavedRecipe,
+      CookedRecipe,
     ]),
     PantryModule,
   ],

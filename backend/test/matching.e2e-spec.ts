@@ -65,11 +65,20 @@ describe('Matching flow (e2e)', () => {
     const byName = new Map(
       ingredients.body.map((i: { id: string; name: string }) => [i.name, i.id]),
     );
+    const stock: Record<string, { quantity: number; unit: string }> = {
+      Huevos: { quantity: 12, unit: 'ud' },
+      Tomate: { quantity: 6, unit: 'ud' },
+      'Aceite de oliva': { quantity: 1, unit: 'l' },
+      Cebolla: { quantity: 3, unit: 'ud' },
+      Sal: { quantity: 500, unit: 'g' },
+      Pan: { quantity: 1, unit: 'ud' },
+      Ajo: { quantity: 1, unit: 'ud' },
+    };
     for (const name of wanted) {
       const res = await request(app.getHttpServer())
         .post('/pantry')
         .set(auth)
-        .send({ ingredientId: byName.get(name), quantity: 1, unit: 'ud' });
+        .send({ ingredientId: byName.get(name), ...stock[name] });
       expect(res.status).toBe(201);
     }
 
@@ -97,6 +106,40 @@ describe('Matching flow (e2e)', () => {
       .map((i: { name: string }) => i.name)
       .sort();
     expect(missingNames).toEqual(['Pepino', 'Pimiento']);
+
+    // Cantidades: con 6 tomates el gazpacho (pide 6) va bien; con 2 ya no.
+    const tomateItems = await request(app.getHttpServer())
+      .get('/pantry')
+      .set(auth);
+    const tomate = tomateItems.body.find(
+      (p: { ingredient: { name: string } }) => p.ingredient.name === 'Tomate',
+    );
+    const patched = await request(app.getHttpServer())
+      .patch(`/pantry/${tomate.id}`)
+      .set(auth)
+      .send({ quantity: 2 });
+    expect(patched.status).toBe(200);
+    const detailLow = await request(app.getHttpServer())
+      .get(`/recipes/${gazpacho.id}`)
+      .set(auth);
+    const tomateRow = detailLow.body.ingredients.find(
+      (i: { name: string }) => i.name === 'Tomate',
+    );
+    expect(tomateRow.inPantry).toBe(true);
+    expect(tomateRow.enough).toBe(false);
+    expect(tomateRow.pantryQuantity).toBe(2);
+    expect(
+      detailLow.body.missingIngredients.map((i: { name: string }) => i.name).sort(),
+    ).toEqual(['Pepino', 'Pimiento', 'Tomate']);
+    expect(detailLow.body.matchPct).toBe(50);
+
+    // Volver a añadir el mismo ingrediente actualiza la cantidad (no da error).
+    const readd = await request(app.getHttpServer())
+      .post('/pantry')
+      .set(auth)
+      .send({ ingredientId: byName.get('Tomate'), quantity: 6, unit: 'ud' });
+    expect(readd.status).toBe(201);
+    expect(readd.body.quantity).toBe(6);
 
     const like = await request(app.getHttpServer())
       .post(`/recipes/${detail.body.id}/likes`)

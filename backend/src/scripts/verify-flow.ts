@@ -43,7 +43,18 @@ async function verify() {
     const id = byName.get(name);
     if (typeof id !== 'string') throw new Error(`Missing seed ingredient ${name}`);
     if (!have.has(id)) {
-      await pantry.create(user.id, { ingredientId: id, quantity: 1, unit: 'ud' });
+      // Cantidades realistas: el matching ya compara cantidades.
+      const stock: Record<string, { quantity: number; unit: string }> = {
+        Huevos: { quantity: 12, unit: 'ud' },
+        Tomate: { quantity: 6, unit: 'ud' },
+        'Aceite de oliva': { quantity: 1, unit: 'l' },
+        Cebolla: { quantity: 3, unit: 'ud' },
+        Sal: { quantity: 500, unit: 'g' },
+      };
+      await pantry.create(user.id, {
+        ingredientId: id,
+        ...(stock[name] ?? { quantity: 1, unit: 'ud' }),
+      });
     }
   }
 

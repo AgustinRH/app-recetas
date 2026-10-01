@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Like, Repository } from 'typeorm';
+import { DataSource, In, Like, Repository } from 'typeorm';
 import { Recipe } from '../entities/recipe.entity';
 import { RecipeIngredient } from '../entities/recipe-ingredient.entity';
 import { RecipeStep } from '../entities/recipe-step.entity';
@@ -12,11 +12,14 @@ import { Ingredient } from '../entities/ingredient.entity';
 import { Like as LikeEntity } from '../entities/like.entity';
 import { Comment } from '../entities/comment.entity';
 import { SavedRecipe } from '../entities/saved-recipe.entity';
+import { CookedRecipe } from '../entities/cooked-recipe.entity';
 import { PantryService } from '../pantry/pantry.service';
 import { SearchService } from '../search/search.service';
 import { RedisService } from '../redis/redis.service';
 import { StorageService } from '../storage/storage.service';
-import { computeMatch } from './compute-match';
+import { todayInMadrid } from '../common/madrid-date';
+import { awardBadges } from '../users/badges';
+import { computeMatch, covers } from './compute-match';
 
 export type CreateRecipeInput = {
   title: string;
@@ -25,6 +28,11 @@ export type CreateRecipeInput = {
   cuisine?: string;
   dietTags?: string[];
   calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  servings?: number;
+  difficulty?: string;
   ingredients: {
     ingredientId: string;
     quantity?: number;
@@ -33,6 +41,17 @@ export type CreateRecipeInput = {
   }[];
   steps: string[];
 };
+
+export const DIFFICULTIES = ['fácil', 'media', 'difícil'] as const;
+
+export type FeedFilters = {
+  maxMinutes?: number;
+  cuisine?: string;
+  diet?: string;
+  following?: boolean;
+};
+
+const FEED_CACHE_KEY = 'feed:first-page';
 
 @Injectable()
 export class RecipesService {
@@ -46,6 +65,8 @@ export class RecipesService {
     @InjectRepository(LikeEntity) private readonly likes: Repository<LikeEntity>,
     @InjectRepository(Comment) private readonly comments: Repository<Comment>,
     @InjectRepository(SavedRecipe) private readonly saves: Repository<SavedRecipe>,
+    @InjectRepository(CookedRecipe) private readonly cooks: Repository<CookedRecipe>,
+    private readonly dataSource: DataSource,
     private readonly pantry: PantryService,
     private readonly search: SearchService,
     private readonly redis: RedisService,
@@ -72,6 +93,11 @@ export class RecipesService {
       cuisine: input.cuisine ?? 'Mediterránea',
       dietTags: input.dietTags ?? [],
       calories: input.calories ?? null,
+      protein: input.protein ?? null,
+      carbs: input.carbs ?? null,
+      fat: input.fat ?? null,
+      servings: input.servings ?? 2,
+      difficulty: input.difficulty ?? 'fácil',
     });
     const saved = await this.recipes.save(recipe);
     saved.ingredients = await this.recipeIngredients.save(
@@ -91,7 +117,7 @@ export class RecipesService {
       ),
     );
     await this.search.upsertRecipe(saved);
-    await this.redis.del('feed:first-page');
+    await this.redis.del(FEED_CACHE_KEY);
     return this.findDetail(saved.id, authorId);
   }
 
@@ -111,7 +137,7 @@ export class RecipesService {
       file.mimetype,
     );
     await this.recipes.save(recipe);
-    await this.redis.del('feed:first-page');
+    await this.redis.del(FEED_CACHE_KEY);
     return { photoUrl: recipe.photoUrl };
   }
 
@@ -119,7 +145,7 @@ export class RecipesService {
     userId: string,
     filters: { maxMinutes?: number; cuisine?: string; diet?: string; q?: string },
   ) {
-    const pantryIds = await this.pantry.pantryIngredientIds(userId);
+    const stock = await this.pantry.pantryStock(userId);
     let recipes = await this.loadRecipesForMatch(filters);
     if (filters.q) {
       recipes = await this.filterByQuery(recipes, filters.q);
@@ -127,7 +153,7 @@ export class RecipesService {
     const scored = recipes.map((recipe) => {
       const { matchPct, missingIngredientIds } = computeMatch(
         recipe.ingredients ?? [],
-        pantryIds,
+        stock,
       );
       return { recipe, matchPct, missingIngredientIds };
     });
@@ -144,12 +170,17 @@ export class RecipesService {
     );
   }
 
-  async searchRecipes(userId: string, q: string, fromPantry?: boolean) {
+  async searchRecipes(
+    userId: string,
+    q: string,
+    fromPantry?: boolean,
+    filters: FeedFilters = {},
+  ) {
     if (fromPantry) {
-      return this.suggested(userId, { q });
+      return this.suggested(userId, { ...filters, q });
     }
     const recipes = await this.filterByQuery(
-      await this.loadRecipesForMatch({}),
+      await this.loadRecipesForMatch(filters),
       q,
     );
     const social = await this.socialFlags(
@@ -159,17 +190,27 @@ export class RecipesService {
     return recipes.map((r) => this.serializeList(r, social.get(r.id)));
   }
 
-  async feed(userId: string, cursor?: string, limit = 20) {
+  async feed(
+    userId: string,
+    cursor?: string,
+    limit = 20,
+    filters: FeedFilters = {},
+  ) {
     const take = Math.min(Math.max(limit, 1), 50);
+    const hasFilters = Boolean(
+      filters.maxMinutes || filters.cuisine || filters.diet || filters.following,
+    );
+    const cacheable = !cursor && !hasFilters && take === 20;
     let rows: Recipe[] | null = null;
-    if (!cursor) {
-      const cached = await this.redis.get('feed:first-page');
+    if (cacheable) {
+      const cached = await this.redis.get(FEED_CACHE_KEY);
       if (cached) rows = JSON.parse(cached) as Recipe[];
     }
     if (!rows) {
       const qb = this.recipes
         .createQueryBuilder('r')
         .leftJoinAndSelect('r.author', 'author')
+        .leftJoinAndSelect('r.ingredients', 'ingredients')
         .orderBy('r.createdAt', 'DESC')
         .addOrderBy('r.id', 'DESC')
         .take(take);
@@ -180,16 +221,47 @@ export class RecipesService {
           { createdAt, id },
         );
       }
+      if (filters.maxMinutes) {
+        qb.andWhere('r.prepMinutes <= :maxMinutes', {
+          maxMinutes: filters.maxMinutes,
+        });
+      }
+      if (filters.cuisine) {
+        qb.andWhere('r.cuisine = :cuisine', { cuisine: filters.cuisine });
+      }
+      if (filters.following) {
+        qb.innerJoin(
+          'follows',
+          'fol',
+          'fol."followingId" = r."authorId" AND fol."followerId" = :followerId',
+          { followerId: userId },
+        );
+      }
       rows = await qb.getMany();
-      if (!cursor) {
-        await this.redis.setex('feed:first-page', 30, JSON.stringify(rows));
+      if (filters.diet) {
+        rows = rows.filter((r) => (r.dietTags ?? []).includes(filters.diet!));
+      }
+      if (cacheable) {
+        await this.redis.setex(FEED_CACHE_KEY, 30, JSON.stringify(rows));
       }
     }
+    // El feed es cronológico, pero cada tarjeta lleva su % de coincidencia
+    // con la despensa para que la app pueda destacar lo que se puede cocinar ya.
+    const stock = await this.pantry.pantryStock(userId);
     const social = await this.socialFlags(
       userId,
       rows.map((r) => r.id),
     );
-    const items = rows.map((r) => this.serializeList(r, social.get(r.id)));
+    const items = rows.map((r) => {
+      const { matchPct, missingIngredientIds } = computeMatch(
+        r.ingredients ?? [],
+        stock,
+      );
+      return this.serializeList(r, social.get(r.id), {
+        matchPct,
+        missingCount: missingIngredientIds.length,
+      });
+    });
     const last = rows[rows.length - 1];
     const nextCursor = last
       ? `${new Date(last.createdAt).toISOString()}|${last.id}`
@@ -197,7 +269,19 @@ export class RecipesService {
     return { items, nextCursor };
   }
 
-  async findDetail(recipeId: string, userId: string) {
+  /** Cocinas presentes en el catálogo, ordenadas alfabéticamente. */
+  async cuisines(): Promise<string[]> {
+    const rows = await this.recipes
+      .createQueryBuilder('r')
+      .select('DISTINCT r.cuisine', 'cuisine')
+      .getRawMany<{ cuisine: string }>();
+    return rows
+      .map((r) => r.cuisine)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'es'));
+  }
+
+  async findDetail(recipeId: string, userId: string | null) {
     const recipe = await this.recipes.findOne({
       where: { id: recipeId },
       relations: {
@@ -208,40 +292,67 @@ export class RecipesService {
     });
     if (!recipe) throw new NotFoundException('Recipe not found');
     recipe.steps = (recipe.steps ?? []).sort((a, b) => a.position - b.position);
-    const pantryIds = await this.pantry.pantryIngredientIds(userId);
-    const { matchPct, missingIngredientIds } = computeMatch(
-      recipe.ingredients ?? [],
-      pantryIds,
-    );
-    const missing = (recipe.ingredients ?? [])
-      .filter((ri) => missingIngredientIds.includes(ri.ingredientId))
-      .map((ri) => ({
-        id: ri.ingredient.id,
-        name: ri.ingredient.name,
-        quantity: ri.quantity,
-        unit: ri.unit,
-      }));
-    const social = await this.socialFlags(userId, [recipe.id]);
-    const flags = social.get(recipe.id);
-    return {
-      ...this.serializeList(recipe, flags, { matchPct, missingCount: missing.length }),
-      description: recipe.description,
-      calories: recipe.calories,
-      dietTags: recipe.dietTags ?? [],
-      ingredients: (recipe.ingredients ?? []).map((ri) => ({
+    const stock = userId ? await this.pantry.pantryStock(userId) : new Map();
+    const matched = userId
+      ? computeMatch(recipe.ingredients ?? [], stock)
+      : null;
+    const missingIngredientIds = matched?.missingIngredientIds ?? [];
+    const insufficient = new Set(matched?.insufficientIngredientIds ?? []);
+    const describe = (ri: RecipeIngredient) => {
+      const have = stock.get(ri.ingredientId);
+      return {
         id: ri.ingredient.id,
         name: ri.ingredient.name,
         category: ri.ingredient.category,
         quantity: ri.quantity,
         unit: ri.unit,
         optional: ri.optional,
-        inPantry: pantryIds.has(ri.ingredientId),
-      })),
+        /** Está en la despensa (aunque no llegue la cantidad). */
+        inPantry: Boolean(have),
+        /** Está y la cantidad cubre lo que pide la receta (o es opcional y falta). */
+        enough: ri.optional
+          ? have
+            ? covers(have, ri)
+            : false
+          : Boolean(have) && !insufficient.has(ri.ingredientId),
+        pantryQuantity: have?.quantity ?? null,
+        pantryUnit: have?.unit ?? null,
+      };
+    };
+    const missing = (recipe.ingredients ?? [])
+      .filter((ri) => missingIngredientIds.includes(ri.ingredientId))
+      .map(describe);
+    const social = await this.socialFlags(userId, [recipe.id]);
+    const flags = social.get(recipe.id);
+    const cookedOn = todayInMadrid();
+    const [cookedCount, cookedToday] = userId
+      ? await Promise.all([
+          this.cooks.count({ where: { userId, recipeId } }),
+          this.cooks.exists({ where: { userId, recipeId, cookedOn } }),
+        ])
+      : [0, false];
+    return {
+      ...this.serializeList(
+        recipe,
+        flags,
+        matched
+          ? { matchPct: matched.matchPct, missingCount: missing.length }
+          : undefined,
+      ),
+      description: recipe.description,
+      calories: recipe.calories,
+      protein: recipe.protein,
+      carbs: recipe.carbs,
+      fat: recipe.fat,
+      cookedCount,
+      cookedToday,
+      ingredients: (recipe.ingredients ?? []).map(describe),
       steps: (recipe.steps ?? []).map((s) => ({
         position: s.position,
         body: s.body,
       })),
-      missingIngredients: missing,
+      missingIngredients: userId ? missing : [],
+      followingAuthor: await this.isFollowingAuthor(userId, recipe.authorId),
     };
   }
 
@@ -279,7 +390,7 @@ export class RecipesService {
       await this.likes.save(this.likes.create({ userId, recipeId }));
     }
     if (!liked && existing) await this.likes.remove(existing);
-    await this.redis.del('feed:first-page');
+    await this.redis.del(FEED_CACHE_KEY);
     return { liked };
   }
 
@@ -291,6 +402,32 @@ export class RecipesService {
     }
     if (!saved && existing) await this.saves.remove(existing);
     return { saved };
+  }
+
+  /** Apunta que hoy has cocinado la receta. Repetir el mismo día no suma otra vez. */
+  async markCooked(userId: string, recipeId: string) {
+    await this.ensureRecipe(recipeId);
+    const cookedOn = todayInMadrid();
+    const existing = await this.cooks.findOne({ where: { userId, recipeId, cookedOn } });
+    if (!existing) {
+      try {
+        await this.cooks.save(this.cooks.create({ userId, recipeId, cookedOn }));
+      } catch (error) {
+        const code = (error as { driverError?: { code?: string } }).driverError?.code;
+        if (code !== '23505') throw error;
+      }
+    }
+    const times = await this.cooks.count({ where: { userId, recipeId } });
+    const recipe = await this.recipes.findOne({
+      where: { id: recipeId },
+      relations: { ingredients: true },
+    });
+    const stock = await this.pantry.pantryStock(userId);
+    const { missingIngredientIds } = computeMatch(recipe?.ingredients ?? [], stock);
+    const codes = ['primera-cocina'];
+    if (missingIngredientIds.length === 0) codes.push('cero-desperdicio');
+    await awardBadges(this.dataSource, userId, codes);
+    return { cookedOn, cookedToday: true, times };
   }
 
   async listComments(recipeId: string) {
@@ -317,7 +454,7 @@ export class RecipesService {
     const saved = await this.comments.save(
       this.comments.create({ userId, recipeId, body }),
     );
-    await this.redis.del('feed:first-page');
+    await this.redis.del(FEED_CACHE_KEY);
     return this.listComments(recipeId).then(
       (all) => all.find((c) => c.id === saved.id)!,
     );
@@ -371,7 +508,18 @@ export class RecipesService {
     );
   }
 
-  private async socialFlags(userId: string, recipeIds: string[]) {
+  private async isFollowingAuthor(userId: string | null, authorId: string | null) {
+    if (!userId || !authorId || userId === authorId) return false;
+    const rows = await this.dataSource.query<{ ok: boolean }[]>(
+      `SELECT EXISTS (
+         SELECT 1 FROM follows WHERE "followerId" = $1 AND "followingId" = $2
+       ) AS ok`,
+      [userId, authorId],
+    );
+    return Boolean(rows[0]?.ok);
+  }
+
+  private async socialFlags(userId: string | null, recipeIds: string[]) {
     const map = new Map<
       string,
       { likesCount: number; commentsCount: number; isLiked: boolean; isSaved: boolean }
@@ -392,8 +540,12 @@ export class RecipesService {
         .where('c.recipeId IN (:...ids)', { ids: recipeIds })
         .groupBy('c.recipeId')
         .getRawMany<{ recipeId: string; count: string }>(),
-      this.likes.find({ where: { userId, recipeId: In(recipeIds) } }),
-      this.saves.find({ where: { userId, recipeId: In(recipeIds) } }),
+      userId
+        ? this.likes.find({ where: { userId, recipeId: In(recipeIds) } })
+        : Promise.resolve([]),
+      userId
+        ? this.saves.find({ where: { userId, recipeId: In(recipeIds) } })
+        : Promise.resolve([]),
     ]);
     const liked = new Set(userLikes.map((l) => l.recipeId));
     const saved = new Set(userSaves.map((s) => s.recipeId));
@@ -428,6 +580,11 @@ export class RecipesService {
       photoUrl: recipe.photoUrl,
       prepMinutes: recipe.prepMinutes,
       cuisine: recipe.cuisine,
+      dietTags: recipe.dietTags ?? [],
+      difficulty: recipe.difficulty ?? 'fácil',
+      servings: recipe.servings ?? 2,
+      calories: recipe.calories ?? null,
+      ingredientsCount: recipe.ingredients?.length ?? undefined,
       createdAt: recipe.createdAt,
       author: recipe.author
         ? {

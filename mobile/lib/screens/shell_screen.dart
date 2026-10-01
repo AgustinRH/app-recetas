@@ -15,7 +15,9 @@ class ShellScreen extends StatelessWidget {
         icon: const Icon(Icons.add),
         label: const Text('Publicar'),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      // Arriba a la derecha de la barra, no encima de las pestañas
+      // (centerDocked tapaba "Despensa" y "Buscar").
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (i) => navigationShell.goBranch(i),

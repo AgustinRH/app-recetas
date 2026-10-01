@@ -13,19 +13,24 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import {
   IsArray,
   IsBoolean,
+  IsIn,
   IsInt,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  Max,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { memoryStorage } from 'multer';
 import { CurrentUser } from '../common/current-user.decorator';
+import { OptionalAuth } from '../common/optional-auth.decorator';
 import { User } from '../entities/user.entity';
-import { RecipesService } from './recipes.service';
+import { DIFFICULTIES, RecipesService } from './recipes.service';
 
 class RecipeIngredientDto {
   @IsUUID()
@@ -45,7 +50,10 @@ class RecipeIngredientDto {
 }
 
 class CreateRecipeDto {
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
+  @IsNotEmpty({ message: 'title must not be empty' })
+  @MaxLength(120)
   title: string;
 
   @IsOptional()
@@ -68,7 +76,33 @@ class CreateRecipeDto {
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   calories?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  protein?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  carbs?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fat?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  servings?: number;
+
+  @IsOptional()
+  @IsIn(DIFFICULTIES)
+  difficulty?: string;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -105,11 +139,19 @@ export class RecipesController {
     @CurrentUser() user: User,
     @Query('q') q: string,
     @Query('fromPantry') fromPantry?: string,
+    @Query('maxMinutes') maxMinutes?: string,
+    @Query('cuisine') cuisine?: string,
+    @Query('diet') diet?: string,
   ) {
     return this.recipes.searchRecipes(
       user.id,
       q ?? '',
       fromPantry === 'true' || fromPantry === '1',
+      {
+        maxMinutes: maxMinutes ? Number(maxMinutes) : undefined,
+        cuisine,
+        diet,
+      },
     );
   }
 
@@ -118,8 +160,23 @@ export class RecipesController {
     @CurrentUser() user: User,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
+    @Query('maxMinutes') maxMinutes?: string,
+    @Query('cuisine') cuisine?: string,
+    @Query('diet') diet?: string,
+    @Query('following') following?: string,
   ) {
-    return this.recipes.feed(user.id, cursor, limit ? Number(limit) : 20);
+    return this.recipes.feed(user.id, cursor, limit ? Number(limit) : 20, {
+      maxMinutes: maxMinutes ? Number(maxMinutes) : undefined,
+      cuisine,
+      diet,
+      following: following === '1' || following === 'true',
+    });
+  }
+
+  /** Valores distintos de cocina en el catálogo, para los filtros. */
+  @Get('recipes/cuisines')
+  cuisines() {
+    return this.recipes.cuisines();
   }
 
   @Get('me/recipes')
@@ -132,9 +189,10 @@ export class RecipesController {
     return this.recipes.savedRecipes(user.id);
   }
 
+  @OptionalAuth()
   @Get('recipes/:id')
-  detail(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.recipes.findDetail(id, user.id);
+  detail(@CurrentUser() user: User | null, @Param('id') id: string) {
+    return this.recipes.findDetail(id, user?.id ?? null);
   }
 
   @Post('recipes')

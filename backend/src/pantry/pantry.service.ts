@@ -1,12 +1,9 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PantryItem } from '../entities/pantry-item.entity';
 import { Ingredient } from '../entities/ingredient.entity';
+import { PantryStock } from '../recipes/compute-match';
 
 @Injectable()
 export class PantryService {
@@ -30,6 +27,24 @@ export class PantryService {
       .then((rows) => new Set(rows.map((r) => r.ingredientId)));
   }
 
+  /** ingredientId → cantidad/unidad disponible, para el matching por cantidades. */
+  pantryStock(userId: string): Promise<Map<string, PantryStock>> {
+    return this.pantry
+      .find({
+        where: { userId },
+        select: { ingredientId: true, quantity: true, unit: true },
+      })
+      .then(
+        (rows) =>
+          new Map(
+            rows.map((r) => [
+              r.ingredientId,
+              { quantity: Number(r.quantity), unit: r.unit },
+            ]),
+          ),
+      );
+  }
+
   async create(
     userId: string,
     data: {
@@ -47,7 +62,13 @@ export class PantryService {
       where: { userId, ingredientId: data.ingredientId },
     });
     if (existing) {
-      throw new BadRequestException('Ingredient already in pantry');
+      // Ya estaba: actualizamos cantidad/unidad en vez de fallar.
+      existing.quantity = data.quantity ?? existing.quantity;
+      existing.unit = data.unit ?? existing.unit;
+      if (data.expiresAt !== undefined) existing.expiresAt = data.expiresAt;
+      const updated = await this.pantry.save(existing);
+      updated.ingredient = ingredient;
+      return updated;
     }
     const item = this.pantry.create({
       userId,
