@@ -15,10 +15,9 @@ class ApiClient {
         );
 
   final Dio _dio;
-  String? _token;
 
+  /// Stores the auth header on Dio so every request sends `Authorization: Bearer …`.
   void setToken(String? token) {
-    _token = token;
     if (token == null) {
       _dio.options.headers.remove('Authorization');
     } else {
