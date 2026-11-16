@@ -25,8 +25,8 @@ export class StorageService implements OnModuleInit {
       endPoint,
       port: Number(this.config.get('MINIO_PORT') ?? 9000),
       useSSL: this.config.get('MINIO_USE_SSL') === 'true',
-      accessKey: this.config.get('MINIO_ACCESS_KEY') ?? 'minio',
-      secretKey: this.config.get('MINIO_SECRET_KEY') ?? 'REDACTED',
+      accessKey: this.config.getOrThrow<string>('MINIO_ACCESS_KEY'),
+      secretKey: this.config.getOrThrow<string>('MINIO_SECRET_KEY'),
     });
     try {
       const exists = await this.minio.bucketExists(this.bucket);

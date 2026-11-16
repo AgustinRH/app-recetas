@@ -2,6 +2,9 @@ node_modules/
 dist/
 build/
 .env
+*.env
+!.env.example
+!infra/.env.example
 *firebase-adminsdk*.json
 *.log
 uploads/

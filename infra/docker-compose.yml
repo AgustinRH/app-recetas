@@ -3,10 +3,12 @@ services:
     image: postgres:16-alpine
     container_name: dishtoday-postgres
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-dishtoday}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: ${POSTGRES_DB:-dishtoday}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -35,10 +37,12 @@ services:
     image: typesense/typesense:27.1
     container_name: dishtoday-typesense
     restart: unless-stopped
-    command: "--data-dir /data --api-key=${TYPESENSE_API_KEY:-xyz} --enable-cors"
+    env_file:
+      - .env
+    command: "--data-dir /data --api-key=${TYPESENSE_API_KEY} --enable-cors"
     environment:
       TYPESENSE_DATA_DIR: /data
-      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-xyz}
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY}
     volumes:
       - typesense_data:/data
     ports:
@@ -51,18 +55,18 @@ services:
     container_name: dishtoday-api
     restart: unless-stopped
     env_file:
-      - ../.env
+      - .env
     environment:
       NODE_ENV: production
       DB_TYPE: postgres
-      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
       TYPESENSE_HOST: typesense
       TYPESENSE_PORT: 8108
       TYPESENSE_PROTOCOL: http
-      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-xyz}
-      MINIO_ENDPOINT: ""
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://api.dishtoday.eu}
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
     volumes:
       - api_uploads:/app/uploads
     depends_on:
@@ -98,7 +102,7 @@ services:
     depends_on:
       - api
     ports:
-      # 80/443 ya los usa Nginx Proxy Manager en el host
+      # 80/443: reverse proxy on the host
       - "3010:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro

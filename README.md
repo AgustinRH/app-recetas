@@ -81,9 +81,9 @@ The compose file joins an external Docker network named `web_proxy` (used in pro
 
 ```bash
 docker network create web_proxy
-cp .env.example .env
 cd infra
-docker compose up --build
+cp .env.example .env   # edit secrets
+docker compose --env-file .env up --build
 ```
 
 Caddy publishes the API at **http://localhost:3010**. Health check: `GET /health`.
@@ -124,7 +124,7 @@ Android and iOS need `google-services.json` and `GoogleService-Info.plist` befor
 
 Production runs from `infra/docker-compose.yml` on a VPS: PostgreSQL, Redis, Typesense and the API, with the Flutter web build served by nginx. TLS is terminated by Nginx Proxy Manager and Let's Encrypt. Caddy on port 3010 is only a host-local proxy to the API.
 
-1. Copy [`.env.example`](.env.example) to `.env` and fill in production values (`DEV_AUTH=false`, Firebase, `PUBLIC_BASE_URL`, and so on). Do not commit `.env`.
+1. Copy [`infra/.env.example`](infra/.env.example) to `infra/.env` (and [`.env.example`](.env.example) for local API work). Fill in production values (`DEV_AUTH=false`, Firebase, `PUBLIC_BASE_URL`, Postgres, and so on). Do not commit `*.env`.
 2. Build the web client (example using the official Flutter image; see [mobile/README.md](mobile/README.md)):
 
    ```bash
@@ -138,7 +138,7 @@ Production runs from `infra/docker-compose.yml` on a VPS: PostgreSQL, Redis, Typ
 
    ```bash
    cd infra
-   docker compose --env-file ../.env up -d --build
+   docker compose --env-file .env up -d --build
    ```
 
 If `mobile/build/web` was deleted and rebuilt, recreate the `web` container so nginx does not keep an old mount (`--force-recreate --no-deps web`).
