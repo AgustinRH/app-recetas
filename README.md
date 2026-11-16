@@ -192,3 +192,8 @@ Regenerate the catalogue JSON with `python3 backend/scripts/build-bulk-recipes.p
 ## Author
 
 [Agust√≠n Rub√≠ Hern√°ndez](https://github.com/AgustinRH)
+
+## License
+
+MIT ó see [LICENSE](LICENSE). Copyright (c) 2026 AgustÌn RubÌ Hern·ndez.
+
