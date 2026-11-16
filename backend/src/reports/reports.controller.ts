@@ -20,7 +20,11 @@ export class ReportsController {
   constructor(private readonly reports: ReportsService) {}
 
   @Post(':id/reports')
-  create(@CurrentUser() user: User, @Param('id') id: string, @Body() body: ReportDto) {
+  create(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() body: ReportDto,
+  ) {
     return this.reports.create(user.id, id, body.reason, body.note ?? '');
   }
 }

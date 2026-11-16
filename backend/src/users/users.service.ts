@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getAuth } from 'firebase-admin/auth';
@@ -35,40 +39,48 @@ export class UsersService {
 
   /** Resumen de actividad para la pantalla de perfil. */
   async stats(userId: string) {
-    const [recipesCount, likesReceived, savedCount, pantryCount, cuisines, cookedRows, dayRows, followRows] =
-      await Promise.all([
-        this.recipes.count({ where: { authorId: userId } }),
-        this.likes
-          .createQueryBuilder('l')
-          .innerJoin('l.recipe', 'r')
-          .where('r.authorId = :userId', { userId })
-          .getCount(),
-        this.saves.count({ where: { userId } }),
-        this.pantry.count({ where: { userId } }),
-        this.recipes
-          .createQueryBuilder('r')
-          .select('r.cuisine', 'cuisine')
-          .addSelect('COUNT(*)', 'count')
-          .where('r.authorId = :userId', { userId })
-          .groupBy('r.cuisine')
-          .orderBy('count', 'DESC')
-          .limit(3)
-          .getRawMany<{ cuisine: string; count: string }>(),
-        this.dataSource.query<{ count: string }[]>(
-          `SELECT COUNT(*)::int AS count FROM cooked_recipes WHERE "userId" = $1`,
-          [userId],
-        ),
-        this.dataSource.query<{ day: string }[]>(
-          `SELECT DISTINCT "cookedOn"::text AS day FROM cooked_recipes WHERE "userId" = $1`,
-          [userId],
-        ),
-        this.dataSource.query<{ followers: string; following: string }[]>(
-          `SELECT
+    const [
+      recipesCount,
+      likesReceived,
+      savedCount,
+      pantryCount,
+      cuisines,
+      cookedRows,
+      dayRows,
+      followRows,
+    ] = await Promise.all([
+      this.recipes.count({ where: { authorId: userId } }),
+      this.likes
+        .createQueryBuilder('l')
+        .innerJoin('l.recipe', 'r')
+        .where('r.authorId = :userId', { userId })
+        .getCount(),
+      this.saves.count({ where: { userId } }),
+      this.pantry.count({ where: { userId } }),
+      this.recipes
+        .createQueryBuilder('r')
+        .select('r.cuisine', 'cuisine')
+        .addSelect('COUNT(*)', 'count')
+        .where('r.authorId = :userId', { userId })
+        .groupBy('r.cuisine')
+        .orderBy('count', 'DESC')
+        .limit(3)
+        .getRawMany<{ cuisine: string; count: string }>(),
+      this.dataSource.query<{ count: string }[]>(
+        `SELECT COUNT(*)::int AS count FROM cooked_recipes WHERE "userId" = $1`,
+        [userId],
+      ),
+      this.dataSource.query<{ day: string }[]>(
+        `SELECT DISTINCT "cookedOn"::text AS day FROM cooked_recipes WHERE "userId" = $1`,
+        [userId],
+      ),
+      this.dataSource.query<{ followers: string; following: string }[]>(
+        `SELECT
              (SELECT COUNT(*)::int FROM follows WHERE "followingId" = $1) AS followers,
              (SELECT COUNT(*)::int FROM follows WHERE "followerId" = $1) AS following`,
-          [userId],
-        ),
-      ]);
+        [userId],
+      ),
+    ]);
     const today = todayInMadrid();
     const days = dayRows.map((row) => String(row.day).slice(0, 10));
     const cookedCount = Number(cookedRows[0]?.count ?? 0);
@@ -76,7 +88,12 @@ export class UsersService {
     await awardBadges(
       this.dataSource,
       userId,
-      earnedFromActivity({ cookedCount, bestStreak, recipesCount, pantryCount }),
+      earnedFromActivity({
+        cookedCount,
+        bestStreak,
+        recipesCount,
+        pantryCount,
+      }),
     );
     const badgeRows = await this.dataSource.query<{ code: string }[]>(
       `SELECT code FROM user_badges WHERE "userId" = $1`,
@@ -133,12 +150,18 @@ export class UsersService {
     if (input.displayName && user.displayName === 'Chef') {
       user.displayName = input.displayName;
     }
-    user.isAdmin = isAdminEmail(user.email, this.config.get<string>('ADMIN_EMAILS'));
+    user.isAdmin = isAdminEmail(
+      user.email,
+      this.config.get<string>('ADMIN_EMAILS'),
+    );
     return this.users.save(user);
   }
 
   findById(id: string) {
-    return this.users.findOne({ where: { id }, relations: { preferences: true } });
+    return this.users.findOne({
+      where: { id },
+      relations: { preferences: true },
+    });
   }
 
   async updateProfile(
@@ -193,13 +216,18 @@ export class UsersService {
           'meal_slots',
           'cooked_recipes',
         ]) {
-          await manager.query(`DELETE FROM ${table} WHERE "recipeId" = ANY($1::uuid[])`, [ids]);
+          await manager.query(
+            `DELETE FROM ${table} WHERE "recipeId" = ANY($1::uuid[])`,
+            [ids],
+          );
         }
         await manager.query(
           `UPDATE shopping_items SET "recipeId" = NULL WHERE "recipeId" = ANY($1::text[])`,
           [ids],
         );
-        await manager.query(`DELETE FROM recipes WHERE id = ANY($1::uuid[])`, [ids]);
+        await manager.query(`DELETE FROM recipes WHERE id = ANY($1::uuid[])`, [
+          ids,
+        ]);
       }
       await manager.query(`DELETE FROM users WHERE id = $1`, [user.id]);
     });
@@ -213,7 +241,8 @@ export class UsersService {
       throw new BadRequestException('No puedes seguirte a ti mismo');
     }
     const target = await this.users.findOne({ where: { id: followingId } });
-    if (!target || target.banned) throw new NotFoundException('Usuario no encontrado');
+    if (!target || target.banned)
+      throw new NotFoundException('Usuario no encontrado');
     if (follow) {
       await this.dataSource.query(
         `INSERT INTO follows (id, "followerId", "followingId")

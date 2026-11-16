@@ -11,7 +11,9 @@ describe('gapsForPlan', () => {
       ],
       new Map([['arroz', { quantity: 120, unit: 'g' }]]),
     );
-    expect(gaps).toEqual([{ ingredientId: 'arroz', name: 'Arroz', quantity: 380, unit: 'g' }]);
+    expect(gaps).toEqual([
+      { ingredientId: 'arroz', name: 'Arroz', quantity: 380, unit: 'g' },
+    ]);
   });
 
   it('omits an ingredient the pantry already covers', () => {
@@ -24,7 +26,15 @@ describe('gapsForPlan', () => {
 
   it('ignores optional ingredients', () => {
     const gaps = gapsForPlan(
-      [{ ingredientId: 'perejil', name: 'Perejil', quantity: 1, unit: 'manojo', optional: true }],
+      [
+        {
+          ingredientId: 'perejil',
+          name: 'Perejil',
+          quantity: 1,
+          unit: 'manojo',
+          optional: true,
+        },
+      ],
       new Map(),
     );
     expect(gaps).toEqual([]);
@@ -32,7 +42,15 @@ describe('gapsForPlan', () => {
 
   it('does not flag a pantry unit that cannot be compared', () => {
     const gaps = gapsForPlan(
-      [{ ingredientId: 'ajo', name: 'Ajo', quantity: 2, unit: 'diente', optional: false }],
+      [
+        {
+          ingredientId: 'ajo',
+          name: 'Ajo',
+          quantity: 2,
+          unit: 'diente',
+          optional: false,
+        },
+      ],
       new Map([['ajo', { quantity: 1, unit: 'ud' }]]),
     );
     expect(gaps).toEqual([]);
@@ -41,11 +59,25 @@ describe('gapsForPlan', () => {
   it('sums loose units and subtracts the same unit in the pantry', () => {
     const gaps = gapsForPlan(
       [
-        { ingredientId: 'ajo', name: 'Ajo', quantity: 2, unit: 'diente', optional: false },
-        { ingredientId: 'ajo', name: 'Ajo', quantity: 3, unit: 'dientes', optional: false },
+        {
+          ingredientId: 'ajo',
+          name: 'Ajo',
+          quantity: 2,
+          unit: 'diente',
+          optional: false,
+        },
+        {
+          ingredientId: 'ajo',
+          name: 'Ajo',
+          quantity: 3,
+          unit: 'dientes',
+          optional: false,
+        },
       ],
       new Map([['ajo', { quantity: 1, unit: 'diente' }]]),
     );
-    expect(gaps).toEqual([{ ingredientId: 'ajo', name: 'Ajo', quantity: 4, unit: 'diente' }]);
+    expect(gaps).toEqual([
+      { ingredientId: 'ajo', name: 'Ajo', quantity: 4, unit: 'diente' },
+    ]);
   });
 });

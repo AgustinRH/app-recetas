@@ -26,10 +26,10 @@ export class AuthGuard implements CanActivate {
       context.getClass(),
     ]);
     if (isPublic) return true;
-    const optional = this.reflector.getAllAndOverride<boolean>(IS_OPTIONAL_AUTH, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const optional = this.reflector.getAllAndOverride<boolean>(
+      IS_OPTIONAL_AUTH,
+      [context.getHandler(), context.getClass()],
+    );
 
     const request = context.switchToHttp().getRequest();
     const header = request.headers.authorization as string | undefined;

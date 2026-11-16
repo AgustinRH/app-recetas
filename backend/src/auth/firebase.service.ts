@@ -22,9 +22,7 @@ export class FirebaseService implements OnModuleInit {
       return;
     }
     const raw = this.config.get<string>('FIREBASE_SERVICE_ACCOUNT');
-    const credential = raw
-      ? cert(JSON.parse(raw))
-      : applicationDefault();
+    const credential = raw ? cert(JSON.parse(raw)) : applicationDefault();
     if (!getApps().length) {
       initializeApp({ credential, projectId });
     }

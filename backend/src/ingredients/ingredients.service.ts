@@ -27,8 +27,7 @@ export class IngredientsService {
       return this.ingredients.find({ where, order: { name: 'ASC' }, take });
     }
     const driver = this.ingredients.manager.connection.options.type;
-    const nameFilter =
-      driver === 'postgres' ? ILike(`%${q}%`) : Like(`%${q}%`);
+    const nameFilter = driver === 'postgres' ? ILike(`%${q}%`) : Like(`%${q}%`);
     return this.ingredients.find({
       where: { ...where, name: nameFilter },
       order: { name: 'ASC' },
@@ -49,7 +48,10 @@ export class IngredientsService {
     const found = rows.map((r) => r.category).filter(Boolean);
     const all = new Set([...DEFAULT_CATEGORIES, ...found]);
     // "Otros" siempre al final.
-    return [...all].filter((c) => c !== 'Otros').sort((a, b) => a.localeCompare(b, 'es')).concat('Otros');
+    return [...all]
+      .filter((c) => c !== 'Otros')
+      .sort((a, b) => a.localeCompare(b, 'es'))
+      .concat('Otros');
   }
 
   /**

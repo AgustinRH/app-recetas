@@ -4,7 +4,11 @@ export const BADGE_CATALOG = [
   { code: 'primera-cocina', name: 'Primera cocina', hint: 'Cocina una receta' },
   { code: 'racha-3', name: 'Tres días', hint: 'Cocina 3 días seguidos' },
   { code: 'racha-7', name: 'Una semana', hint: 'Cocina 7 días seguidos' },
-  { code: 'cero-desperdicio', name: 'Cero desperdicio', hint: 'Cocina una receta con lo que ya tienes' },
+  {
+    code: 'cero-desperdicio',
+    name: 'Cero desperdicio',
+    hint: 'Cocina una receta con lo que ya tienes',
+  },
   { code: 'tu-receta', name: 'Tu receta', hint: 'Publica una receta' },
   { code: 'despensa', name: 'Despensa', hint: 'Guarda 8 ingredientes en casa' },
 ] as const;
@@ -25,7 +29,11 @@ export function earnedFromActivity(input: {
   return codes;
 }
 
-export async function awardBadges(db: DataSource, userId: string, codes: string[]) {
+export async function awardBadges(
+  db: DataSource,
+  userId: string,
+  codes: string[],
+) {
   const unique = [...new Set(codes)];
   if (!unique.length) return;
   await db.query(

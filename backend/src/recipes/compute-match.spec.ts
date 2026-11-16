@@ -1,7 +1,15 @@
 import { computeMatch } from './compute-match';
 
 describe('computeMatch', () => {
-  const pantry = new Set(['huevos', 'tomate', 'aceite', 'cebolla', 'sal', 'pan', 'ajo']);
+  const pantry = new Set([
+    'huevos',
+    'tomate',
+    'aceite',
+    'cebolla',
+    'sal',
+    'pan',
+    'ajo',
+  ]);
 
   it('returns 100% when every required ingredient is in the pantry', () => {
     const result = computeMatch(
@@ -42,11 +50,16 @@ describe('computeMatch', () => {
       pantry,
     );
     expect(result.matchPct).toBe(60);
-    expect(result.missingIngredientIds.sort()).toEqual(['pepino', 'pimiento'].sort());
+    expect(result.missingIngredientIds.sort()).toEqual(
+      ['pepino', 'pimiento'].sort(),
+    );
   });
 
   it('returns 100% when a recipe has no required ingredients', () => {
-    const result = computeMatch([{ ingredientId: 'perejil', optional: true }], pantry);
+    const result = computeMatch(
+      [{ ingredientId: 'perejil', optional: true }],
+      pantry,
+    );
     expect(result.matchPct).toBe(100);
   });
 
@@ -98,7 +111,14 @@ describe('computeMatch', () => {
 
     it('no penaliza unidades incompatibles (1 ud de ajo frente a 2 dientes)', () => {
       const result = computeMatch(
-        [{ ingredientId: 'ajo', optional: false, quantity: 2, unit: 'dientes' }],
+        [
+          {
+            ingredientId: 'ajo',
+            optional: false,
+            quantity: 2,
+            unit: 'dientes',
+          },
+        ],
         stock,
       );
       expect(result.matchPct).toBe(100);

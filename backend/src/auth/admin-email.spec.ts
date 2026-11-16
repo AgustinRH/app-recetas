@@ -2,7 +2,9 @@ import { isAdminEmail } from './admin-email';
 
 describe('isAdminEmail', () => {
   it('matches one of the configured emails, ignoring case and spaces', () => {
-    expect(isAdminEmail('Agus@gmail.com', ' otro@x.com , agus@gmail.com ')).toBe(true);
+    expect(
+      isAdminEmail('Agus@gmail.com', ' otro@x.com , agus@gmail.com '),
+    ).toBe(true);
   });
 
   it('rejects everyone when the list is empty', () => {

@@ -80,7 +80,10 @@ export class ShoppingService {
       recipe.ingredients ?? [],
       stock,
     );
-    const needed = new Set([...missingIngredientIds, ...insufficientIngredientIds]);
+    const needed = new Set([
+      ...missingIngredientIds,
+      ...insufficientIngredientIds,
+    ]);
     const added: ShoppingItem[] = [];
     for (const ri of recipe.ingredients ?? []) {
       if (!needed.has(ri.ingredientId)) continue;
@@ -148,7 +151,7 @@ export class ShoppingService {
         have && normalizeUnit(have.unit) === normalizeUnit(item.unit);
       await this.pantry.create(userId, {
         ingredientId: item.ingredientId,
-        quantity: sameUnit ? have!.quantity + item.quantity : item.quantity,
+        quantity: sameUnit ? have.quantity + item.quantity : item.quantity,
         unit: item.unit,
       });
       await this.items.remove(item);
@@ -157,7 +160,11 @@ export class ShoppingService {
     return { moved, items: await this.list(userId) };
   }
 
-  private async upsert(userId: string, line: ShoppingLine, mode: 'add' | 'atLeast' = 'add') {
+  private async upsert(
+    userId: string,
+    line: ShoppingLine,
+    mode: 'add' | 'atLeast' = 'add',
+  ) {
     const existing = await this.items.findOne({
       where: { userId, ingredientId: line.ingredientId },
     });
@@ -173,7 +180,8 @@ export class ShoppingService {
         existing.unit = unit;
       }
       existing.checked = false;
-      if (mode === 'add') existing.recipeId = line.recipeId ?? existing.recipeId;
+      if (mode === 'add')
+        existing.recipeId = line.recipeId ?? existing.recipeId;
       return this.items.save(existing);
     }
     return this.items.save(

@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
 import { CurrentUser } from '../common/current-user.decorator';
 import { User } from '../entities/user.entity';
@@ -41,7 +49,9 @@ export class UsersController {
   @Post('auth/sync')
   async sync(@CurrentUser() user: User, @Body() body: SyncAuthDto) {
     if (body.displayName) {
-      await this.users.updateProfile(user.id, { displayName: body.displayName });
+      await this.users.updateProfile(user.id, {
+        displayName: body.displayName,
+      });
     }
     const fresh = await this.users.findById(user.id);
     return this.users.toPublic(fresh!);

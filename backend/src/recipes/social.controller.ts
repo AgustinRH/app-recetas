@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 import { CurrentUser } from '../common/current-user.decorator';
 import { OptionalAuth } from '../common/optional-auth.decorator';

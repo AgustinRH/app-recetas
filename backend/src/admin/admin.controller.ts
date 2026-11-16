@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { IsBoolean } from 'class-validator';
 import { AdminGuard } from '../auth/admin.guard';
 import { CurrentUser } from '../common/current-user.decorator';
@@ -26,7 +35,11 @@ export class AdminController {
   }
 
   @Patch('users/:id')
-  setBanned(@CurrentUser() actor: User, @Param('id') id: string, @Body() body: BanDto) {
+  setBanned(
+    @CurrentUser() actor: User,
+    @Param('id') id: string,
+    @Body() body: BanDto,
+  ) {
     return this.admin.setBanned(actor.id, id, body.banned);
   }
 

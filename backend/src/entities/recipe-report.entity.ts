@@ -18,7 +18,10 @@ export const REPORT_REASONS = [
   'otro',
 ] as const;
 
-export const REPORT_REASON_LABELS: Record<(typeof REPORT_REASONS)[number], string> = {
+export const REPORT_REASON_LABELS: Record<
+  (typeof REPORT_REASONS)[number],
+  string
+> = {
   inapropiado: 'Contenido inapropiado',
   spam: 'Spam o publicidad',
   incorrecta: 'Receta incorrecta o peligrosa',

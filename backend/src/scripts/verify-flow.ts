@@ -41,7 +41,8 @@ async function verify() {
   const have = new Set(existing.map((p) => p.ingredientId));
   for (const name of wanted) {
     const id = byName.get(name);
-    if (typeof id !== 'string') throw new Error(`Missing seed ingredient ${name}`);
+    if (typeof id !== 'string')
+      throw new Error(`Missing seed ingredient ${name}`);
     if (!have.has(id)) {
       // Cantidades realistas: el matching ya compara cantidades.
       const stock: Record<string, { quantity: number; unit: string }> = {

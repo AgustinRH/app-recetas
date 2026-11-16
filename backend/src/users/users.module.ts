@@ -10,14 +10,16 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([
+  imports: [
+    TypeOrmModule.forFeature([
       User,
       UserPreferences,
       Recipe,
       Like,
       SavedRecipe,
       PantryItem,
-    ])],
+    ]),
+  ],
   providers: [UsersService],
   controllers: [UsersController],
   exports: [UsersService],

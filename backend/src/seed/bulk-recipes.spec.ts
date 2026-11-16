@@ -29,8 +29,10 @@ describe('bulk recipe catalog', () => {
       expect(recipe.photoQuery.length).toBeGreaterThan(3);
       expect(recipe.servings).toBeGreaterThan(0);
       expect(recipe.calories).toBeGreaterThan(0);
-      for (const tag of recipe.dietTags) expect(allowedTags.has(tag)).toBe(true);
-      for (const item of recipe.ingredients) expect(names.has(item.name)).toBe(true);
+      for (const tag of recipe.dietTags)
+        expect(allowedTags.has(tag)).toBe(true);
+      for (const item of recipe.ingredients)
+        expect(names.has(item.name)).toBe(true);
     }
   });
 });

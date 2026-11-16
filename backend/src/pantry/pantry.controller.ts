@@ -7,13 +7,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import {
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Min,
-} from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { CurrentUser } from '../common/current-user.decorator';
 import { User } from '../entities/user.entity';
 import { PantryService } from './pantry.service';

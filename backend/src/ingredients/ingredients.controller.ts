@@ -30,7 +30,11 @@ export class IngredientsController {
     @Query('category') category?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.ingredients.findAll(q, category, limit ? Number(limit) : undefined);
+    return this.ingredients.findAll(
+      q,
+      category,
+      limit ? Number(limit) : undefined,
+    );
   }
 
   @Get('categories')

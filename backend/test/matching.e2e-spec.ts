@@ -129,7 +129,9 @@ describe('Matching flow (e2e)', () => {
     expect(tomateRow.enough).toBe(false);
     expect(tomateRow.pantryQuantity).toBe(2);
     expect(
-      detailLow.body.missingIngredients.map((i: { name: string }) => i.name).sort(),
+      detailLow.body.missingIngredients
+        .map((i: { name: string }) => i.name)
+        .sort(),
     ).toEqual(['Pepino', 'Pimiento', 'Tomate']);
     expect(detailLow.body.matchPct).toBe(50);
 

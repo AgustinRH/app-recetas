@@ -69,12 +69,15 @@ export class SearchService implements OnModuleInit {
   async upsertIngredient(ingredient: Ingredient) {
     if (!this.client) return;
     try {
-      await this.client.collections('ingredients').documents().upsert({
-        id: ingredient.id,
-        name: ingredient.name,
-        category: ingredient.category,
-        aliases: ingredient.aliases ?? [],
-      });
+      await this.client
+        .collections('ingredients')
+        .documents()
+        .upsert({
+          id: ingredient.id,
+          name: ingredient.name,
+          category: ingredient.category,
+          aliases: ingredient.aliases ?? [],
+        });
     } catch (err) {
       this.logger.warn(`Index ingredient failed: ${(err as Error).message}`);
     }
@@ -83,14 +86,17 @@ export class SearchService implements OnModuleInit {
   async upsertRecipe(recipe: Recipe) {
     if (!this.client) return;
     try {
-      await this.client.collections('recipes').documents().upsert({
-        id: recipe.id,
-        title: recipe.title,
-        description: recipe.description ?? '',
-        cuisine: recipe.cuisine,
-        diet_tags: recipe.dietTags ?? [],
-        prep_minutes: recipe.prepMinutes,
-      });
+      await this.client
+        .collections('recipes')
+        .documents()
+        .upsert({
+          id: recipe.id,
+          title: recipe.title,
+          description: recipe.description ?? '',
+          cuisine: recipe.cuisine,
+          diet_tags: recipe.dietTags ?? [],
+          prep_minutes: recipe.prepMinutes,
+        });
     } catch (err) {
       this.logger.warn(`Index recipe failed: ${(err as Error).message}`);
     }
@@ -125,7 +131,9 @@ export class SearchService implements OnModuleInit {
         .collections('recipes')
         .documents()
         .search({ q, query_by: 'title,description,cuisine', per_page: 30 });
-      return (result.hits ?? []).map((h) => String((h.document as { id: string }).id));
+      return (result.hits ?? []).map((h) =>
+        String((h.document as { id: string }).id),
+      );
     } catch {
       return [];
     }

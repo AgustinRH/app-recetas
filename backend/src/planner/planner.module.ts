@@ -8,7 +8,11 @@ import { PlannerController } from './planner.controller';
 import { PlannerService } from './planner.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MealSlot, Recipe]), PantryModule, ShoppingModule],
+  imports: [
+    TypeOrmModule.forFeature([MealSlot, Recipe]),
+    PantryModule,
+    ShoppingModule,
+  ],
   controllers: [PlannerController],
   providers: [PlannerService],
 })

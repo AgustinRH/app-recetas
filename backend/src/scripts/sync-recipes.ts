@@ -54,8 +54,11 @@ function plain(html?: string) {
 
 function licenseOk(name: string) {
   const n = name.toLowerCase();
-  if (n.includes('noncommercial') || /(^|[^a-z])nc([^a-z]|$)/.test(n)) return false;
-  return n.includes('cc by') || n.includes('cc0') || n.includes('public domain');
+  if (n.includes('noncommercial') || /(^|[^a-z])nc([^a-z]|$)/.test(n))
+    return false;
+  return (
+    n.includes('cc by') || n.includes('cc0') || n.includes('public domain')
+  );
 }
 
 function titleOk(title: string) {
@@ -98,7 +101,8 @@ async function commonsPhoto(query: string) {
     const mime = info?.mime ?? '';
     const license = plain(info?.extmetadata?.LicenseShortName?.value);
     if (!info?.thumburl || !titleOk(page.title ?? '')) continue;
-    if (!mime.startsWith('image/jpeg') && !mime.startsWith('image/png')) continue;
+    if (!mime.startsWith('image/jpeg') && !mime.startsWith('image/png'))
+      continue;
     if (!licenseOk(license)) continue;
     const img = await fetch(info.thumburl, { headers: { 'User-Agent': UA } });
     if (!img.ok) continue;
@@ -106,7 +110,8 @@ async function commonsPhoto(query: string) {
     const jpeg = buffer[0] === 0xff && buffer[1] === 0xd8;
     const png = buffer[0] === 0x89 && buffer[1] === 0x50;
     if ((!jpeg && !png) || buffer.length < 12_000) continue;
-    const artist = plain(info.extmetadata?.Artist?.value) || 'autor desconocido';
+    const artist =
+      plain(info.extmetadata?.Artist?.value) || 'autor desconocido';
     const credit = `${artist}, ${license}, Wikimedia Commons`;
     return { buffer, credit, ext: jpeg ? 'jpg' : 'png' };
   }
@@ -119,10 +124,9 @@ async function main() {
     logger: ['error', 'warn', 'log'],
   });
   const seed = app.get(SeedService);
-  const publicBase = (process.env.PUBLIC_BASE_URL ?? 'http://localhost:3000').replace(
-    /\/$/,
-    '',
-  );
+  const publicBase = (
+    process.env.PUBLIC_BASE_URL ?? 'http://localhost:3000'
+  ).replace(/\/$/, '');
   const dir = join(process.cwd(), 'uploads', 'recipes');
   await mkdir(dir, { recursive: true });
   const bulk = JSON.parse(
@@ -145,7 +149,10 @@ async function main() {
     const file = `seed-${slug(title)}.${photo.ext}`;
     await writeFile(join(dir, file), photo.buffer);
     photos += 1;
-    return { photoUrl: `${publicBase}/uploads/recipes/${file}`, credit: photo.credit };
+    return {
+      photoUrl: `${publicBase}/uploads/recipes/${file}`,
+      credit: photo.credit,
+    };
   }
 
   try {
@@ -166,9 +173,14 @@ async function main() {
       if (recipe.photoQuery) {
         const photo = await takePhoto(recipe.photoQuery, recipe.title);
         photoUrl = photo.photoUrl;
-        if (photo.credit) description = `${description}\n\nFoto: ${photo.credit}.`;
+        if (photo.credit)
+          description = `${description}\n\nFoto: ${photo.credit}.`;
       }
-      const status = await seed.addCatalogRecipe({ ...recipe, description, photoUrl });
+      const status = await seed.addCatalogRecipe({
+        ...recipe,
+        description,
+        photoUrl,
+      });
       if (status === 'inserted') inserted += 1;
       else if (status === 'updated') updated += 1;
       else skipped += 1;
@@ -196,7 +208,14 @@ async function main() {
       if (status === 'updated') updated += 1;
     }
     console.log(
-      JSON.stringify({ inserted, updated, skipped, photos, missed, total: bulk.length }),
+      JSON.stringify({
+        inserted,
+        updated,
+        skipped,
+        photos,
+        missed,
+        total: bulk.length,
+      }),
     );
   } finally {
     await app.close();

@@ -22,7 +22,8 @@ export class SeedService implements OnModuleInit {
     @InjectRepository(Recipe) private readonly recipes: Repository<Recipe>,
     @InjectRepository(RecipeIngredient)
     private readonly recipeIngredients: Repository<RecipeIngredient>,
-    @InjectRepository(RecipeStep) private readonly steps: Repository<RecipeStep>,
+    @InjectRepository(RecipeStep)
+    private readonly steps: Repository<RecipeStep>,
     @InjectRepository(User) private readonly users: Repository<User>,
     @InjectRepository(UserPreferences)
     private readonly prefs: Repository<UserPreferences>,
@@ -42,7 +43,9 @@ export class SeedService implements OnModuleInit {
   async addMissingIngredients() {
     const existing = await this.ingredients.find({ select: { name: true } });
     const have = new Set(existing.map((i) => i.name.toLowerCase()));
-    const missing = INGREDIENT_SEEDS.filter((i) => !have.has(i.name.toLowerCase()));
+    const missing = INGREDIENT_SEEDS.filter(
+      (i) => !have.has(i.name.toLowerCase()),
+    );
     if (!missing.length) return 0;
     const saved = await this.ingredients.save(
       missing.map((i) => this.ingredients.create(i)),
@@ -57,7 +60,9 @@ export class SeedService implements OnModuleInit {
   async run() {
     const count = await this.ingredients.count();
     if (count > 0) {
-      this.logger.log('Seed skipped (ingredients already present); topping up catalog');
+      this.logger.log(
+        'Seed skipped (ingredients already present); topping up catalog',
+      );
       await this.addMissingIngredients();
       return;
     }
@@ -121,7 +126,9 @@ export class SeedService implements OnModuleInit {
    * Inserta una receta del catálogo si el autor semilla aún no tiene ese título.
    * Si ya existe y no tiene foto, guarda la URL nueva.
    */
-  async seedRecipeState(title: string): Promise<'missing' | 'needs-photo' | 'ready'> {
+  async seedRecipeState(
+    title: string,
+  ): Promise<'missing' | 'needs-photo' | 'ready'> {
     const author = await this.ensureSeedAuthor();
     const existing = await this.recipes.findOne({
       where: { title, authorId: author.id },

@@ -17,7 +17,9 @@ export class StorageService implements OnModuleInit {
     const endPoint = this.config.get<string>('MINIO_ENDPOINT');
     if (!endPoint) {
       this.logger.warn('MinIO disabled — using local ./uploads');
-      await mkdir(join(process.cwd(), 'uploads', 'recipes'), { recursive: true });
+      await mkdir(join(process.cwd(), 'uploads', 'recipes'), {
+        recursive: true,
+      });
       return;
     }
     this.bucket = this.config.get<string>('MINIO_BUCKET') ?? 'dishtoday';
@@ -34,7 +36,9 @@ export class StorageService implements OnModuleInit {
     } catch (err) {
       this.logger.warn(`MinIO unavailable: ${(err as Error).message}`);
       this.minio = null;
-      await mkdir(join(process.cwd(), 'uploads', 'recipes'), { recursive: true });
+      await mkdir(join(process.cwd(), 'uploads', 'recipes'), {
+        recursive: true,
+      });
     }
   }
 
@@ -46,9 +50,15 @@ export class StorageService implements OnModuleInit {
         : 'jpg';
     const objectName = `recipes/${recipeId}-${randomUUID()}.${ext}`;
     if (this.minio && this.bucket) {
-      await this.minio.putObject(this.bucket, objectName, buffer, buffer.length, {
-        'Content-Type': mimeType,
-      });
+      await this.minio.putObject(
+        this.bucket,
+        objectName,
+        buffer,
+        buffer.length,
+        {
+          'Content-Type': mimeType,
+        },
+      );
       const publicBase =
         this.config.get<string>('PUBLIC_BASE_URL') ?? 'http://localhost:9000';
       return `${publicBase}/${this.bucket}/${objectName}`;

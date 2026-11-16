@@ -1,4 +1,7 @@
-export function isAdminEmail(email: string | null | undefined, raw: string | undefined) {
+export function isAdminEmail(
+  email: string | null | undefined,
+  raw: string | undefined,
+) {
   if (!email) return false;
   const allowed = (raw ?? '')
     .split(',')

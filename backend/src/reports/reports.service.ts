@@ -12,7 +12,8 @@ import { REPORT_REASONS, RecipeReport } from '../entities/recipe-report.entity';
 @Injectable()
 export class ReportsService {
   constructor(
-    @InjectRepository(RecipeReport) private readonly reports: Repository<RecipeReport>,
+    @InjectRepository(RecipeReport)
+    private readonly reports: Repository<RecipeReport>,
     @InjectRepository(Recipe) private readonly recipes: Repository<Recipe>,
   ) {}
 
@@ -25,7 +26,9 @@ export class ReportsService {
     if (recipe.authorId === userId) {
       throw new BadRequestException('No puedes denunciar tu propia receta');
     }
-    const existing = await this.reports.findOne({ where: { userId, recipeId } });
+    const existing = await this.reports.findOne({
+      where: { userId, recipeId },
+    });
     if (existing?.status === 'open') {
       throw new ConflictException('Ya has denunciado esta receta');
     }

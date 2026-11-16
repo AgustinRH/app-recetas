@@ -38,11 +38,13 @@ function roundShopping(amount: number) {
 
 function displayFromBase(amount: number, family: Family) {
   if (family === 'mass') {
-    if (amount >= 1000) return { quantity: roundShopping(amount / 1000), unit: 'kg' };
+    if (amount >= 1000)
+      return { quantity: roundShopping(amount / 1000), unit: 'kg' };
     return { quantity: roundShopping(amount), unit: 'g' };
   }
   if (family === 'volume') {
-    if (amount >= 1000) return { quantity: roundShopping(amount / 1000), unit: 'l' };
+    if (amount >= 1000)
+      return { quantity: roundShopping(amount / 1000), unit: 'l' };
     return { quantity: roundShopping(amount), unit: 'ml' };
   }
   return { quantity: roundShopping(amount), unit: 'ud' };
@@ -54,7 +56,10 @@ function displayFromBase(amount: number, family: Family) {
  * convierten. Si la despensa está en una unidad incompatible, no se penaliza,
  * igual que el matching de una receta suelta.
  */
-export function gapsForPlan(lines: NeedInput[], stock: Map<string, PantryStock>): Gap[] {
+export function gapsForPlan(
+  lines: NeedInput[],
+  stock: Map<string, PantryStock>,
+): Gap[] {
   const buckets = new Map<string, Bucket>();
   for (const line of lines) {
     if (line.optional) continue;
@@ -66,8 +71,18 @@ export function gapsForPlan(lines: NeedInput[], stock: Map<string, PantryStock>)
       buckets.set(
         line.ingredientId,
         base
-          ? { kind: 'base', family: base.family, amount: base.amount, name: line.name }
-          : { kind: 'loose', unit: singular(line.unit), amount: qty, name: line.name },
+          ? {
+              kind: 'base',
+              family: base.family,
+              amount: base.amount,
+              name: line.name,
+            }
+          : {
+              kind: 'loose',
+              unit: singular(line.unit),
+              amount: qty,
+              name: line.name,
+            },
       );
       continue;
     }
@@ -75,7 +90,11 @@ export function gapsForPlan(lines: NeedInput[], stock: Map<string, PantryStock>)
       current.amount += base.amount;
       continue;
     }
-    if (current.kind === 'loose' && !base && singular(line.unit) === current.unit) {
+    if (
+      current.kind === 'loose' &&
+      !base &&
+      singular(line.unit) === current.unit
+    ) {
       current.amount += qty;
     }
   }
@@ -105,7 +124,12 @@ export function gapsForPlan(lines: NeedInput[], stock: Map<string, PantryStock>)
       if (deficit <= EPS) continue;
       const quantity = roundShopping(deficit);
       if (quantity <= 0) continue;
-      gaps.push({ ingredientId, name: bucket.name, quantity, unit: bucket.unit });
+      gaps.push({
+        ingredientId,
+        name: bucket.name,
+        quantity,
+        unit: bucket.unit,
+      });
       continue;
     }
     const quantity = roundShopping(bucket.amount);

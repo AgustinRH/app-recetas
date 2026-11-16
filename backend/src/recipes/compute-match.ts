@@ -107,7 +107,10 @@ function singular(unit: string) {
  *   "2 dientes") → no se puede saber; se da por cubierto para no penalizar.
  * - Cantidad 0 en la despensa → se ha acabado, no cubre.
  */
-export function covers(have: PantryStock, need: { quantity?: number; unit?: string }) {
+export function covers(
+  have: PantryStock,
+  need: { quantity?: number; unit?: string },
+) {
   if (!(have.quantity > 0)) return false;
   if (need.quantity == null || !(need.quantity > 0)) return true;
 
@@ -129,7 +132,11 @@ export function computeMatch(
 ): MatchResult {
   const required = ingredients.filter((i) => !i.optional);
   if (required.length === 0) {
-    return { matchPct: 100, missingIngredientIds: [], insufficientIngredientIds: [] };
+    return {
+      matchPct: 100,
+      missingIngredientIds: [],
+      insufficientIngredientIds: [],
+    };
   }
   const missingIngredientIds: string[] = [];
   const insufficientIngredientIds: string[] = [];

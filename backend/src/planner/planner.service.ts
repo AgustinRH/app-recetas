@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MealSlot } from '../entities/meal-slot.entity';
@@ -14,7 +18,10 @@ function assertMonday(weekStart: string) {
     throw new BadRequestException('Semana no válida');
   }
   const date = new Date(`${weekStart}T00:00:00Z`);
-  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== weekStart) {
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== weekStart
+  ) {
     throw new BadRequestException('Semana no válida');
   }
   if (date.getUTCDay() !== 1) {
@@ -35,10 +42,15 @@ export class PlannerService {
     assertMonday(weekStart);
     const rows = await this.slots.find({
       where: { userId, weekStart },
-      relations: { recipe: { author: true, ingredients: { ingredient: true } } },
+      relations: {
+        recipe: { author: true, ingredients: { ingredient: true } },
+      },
     });
     rows.sort(
-      (a, b) => a.dayIndex - b.dayIndex || MEALS.indexOf(a.meal as (typeof MEALS)[number]) - MEALS.indexOf(b.meal as (typeof MEALS)[number]),
+      (a, b) =>
+        a.dayIndex - b.dayIndex ||
+        MEALS.indexOf(a.meal as (typeof MEALS)[number]) -
+          MEALS.indexOf(b.meal as (typeof MEALS)[number]),
     );
     const lines: NeedInput[] = [];
     for (const slot of rows) {
@@ -75,10 +87,19 @@ export class PlannerService {
 
   async setSlot(
     userId: string,
-    input: { weekStart: string; dayIndex: number; meal: string; recipeId?: string | null },
+    input: {
+      weekStart: string;
+      dayIndex: number;
+      meal: string;
+      recipeId?: string | null;
+    },
   ) {
     assertMonday(input.weekStart);
-    if (!Number.isInteger(input.dayIndex) || input.dayIndex < 0 || input.dayIndex > 6) {
+    if (
+      !Number.isInteger(input.dayIndex) ||
+      input.dayIndex < 0 ||
+      input.dayIndex > 6
+    ) {
       throw new BadRequestException('Día no válido');
     }
     if (!MEALS.includes(input.meal as (typeof MEALS)[number])) {
@@ -94,14 +115,18 @@ export class PlannerService {
       await this.slots.delete(where);
       return this.week(userId, input.weekStart);
     }
-    const recipe = await this.recipes.findOne({ where: { id: input.recipeId } });
+    const recipe = await this.recipes.findOne({
+      where: { id: input.recipeId },
+    });
     if (!recipe) throw new NotFoundException('Receta no encontrada');
     const existing = await this.slots.findOne({ where });
     if (existing) {
       existing.recipeId = input.recipeId;
       await this.slots.save(existing);
     } else {
-      await this.slots.save(this.slots.create({ ...where, recipeId: input.recipeId }));
+      await this.slots.save(
+        this.slots.create({ ...where, recipeId: input.recipeId }),
+      );
     }
     return this.week(userId, input.weekStart);
   }

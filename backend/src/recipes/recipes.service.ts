@@ -59,13 +59,17 @@ export class RecipesService {
     @InjectRepository(Recipe) private readonly recipes: Repository<Recipe>,
     @InjectRepository(RecipeIngredient)
     private readonly recipeIngredients: Repository<RecipeIngredient>,
-    @InjectRepository(RecipeStep) private readonly steps: Repository<RecipeStep>,
+    @InjectRepository(RecipeStep)
+    private readonly steps: Repository<RecipeStep>,
     @InjectRepository(Ingredient)
     private readonly ingredients: Repository<Ingredient>,
-    @InjectRepository(LikeEntity) private readonly likes: Repository<LikeEntity>,
+    @InjectRepository(LikeEntity)
+    private readonly likes: Repository<LikeEntity>,
     @InjectRepository(Comment) private readonly comments: Repository<Comment>,
-    @InjectRepository(SavedRecipe) private readonly saves: Repository<SavedRecipe>,
-    @InjectRepository(CookedRecipe) private readonly cooks: Repository<CookedRecipe>,
+    @InjectRepository(SavedRecipe)
+    private readonly saves: Repository<SavedRecipe>,
+    @InjectRepository(CookedRecipe)
+    private readonly cooks: Repository<CookedRecipe>,
     private readonly dataSource: DataSource,
     private readonly pantry: PantryService,
     private readonly search: SearchService,
@@ -143,7 +147,12 @@ export class RecipesService {
 
   async suggested(
     userId: string,
-    filters: { maxMinutes?: number; cuisine?: string; diet?: string; q?: string },
+    filters: {
+      maxMinutes?: number;
+      cuisine?: string;
+      diet?: string;
+      q?: string;
+    },
   ) {
     const stock = await this.pantry.pantryStock(userId);
     let recipes = await this.loadRecipesForMatch(filters);
@@ -157,7 +166,10 @@ export class RecipesService {
       );
       return { recipe, matchPct, missingIngredientIds };
     });
-    scored.sort((a, b) => b.matchPct - a.matchPct || a.recipe.title.localeCompare(b.recipe.title));
+    scored.sort(
+      (a, b) =>
+        b.matchPct - a.matchPct || a.recipe.title.localeCompare(b.recipe.title),
+    );
     const social = await this.socialFlags(
       userId,
       scored.map((s) => s.recipe.id),
@@ -198,7 +210,10 @@ export class RecipesService {
   ) {
     const take = Math.min(Math.max(limit, 1), 50);
     const hasFilters = Boolean(
-      filters.maxMinutes || filters.cuisine || filters.diet || filters.following,
+      filters.maxMinutes ||
+      filters.cuisine ||
+      filters.diet ||
+      filters.following,
     );
     const cacheable = !cursor && !hasFilters && take === 20;
     let rows: Recipe[] | null = null;
@@ -408,12 +423,17 @@ export class RecipesService {
   async markCooked(userId: string, recipeId: string) {
     await this.ensureRecipe(recipeId);
     const cookedOn = todayInMadrid();
-    const existing = await this.cooks.findOne({ where: { userId, recipeId, cookedOn } });
+    const existing = await this.cooks.findOne({
+      where: { userId, recipeId, cookedOn },
+    });
     if (!existing) {
       try {
-        await this.cooks.save(this.cooks.create({ userId, recipeId, cookedOn }));
+        await this.cooks.save(
+          this.cooks.create({ userId, recipeId, cookedOn }),
+        );
       } catch (error) {
-        const code = (error as { driverError?: { code?: string } }).driverError?.code;
+        const code = (error as { driverError?: { code?: string } }).driverError
+          ?.code;
         if (code !== '23505') throw error;
       }
     }
@@ -423,7 +443,10 @@ export class RecipesService {
       relations: { ingredients: true },
     });
     const stock = await this.pantry.pantryStock(userId);
-    const { missingIngredientIds } = computeMatch(recipe?.ingredients ?? [], stock);
+    const { missingIngredientIds } = computeMatch(
+      recipe?.ingredients ?? [],
+      stock,
+    );
     const codes = ['primera-cocina'];
     if (missingIngredientIds.length === 0) codes.push('cero-desperdicio');
     await awardBadges(this.dataSource, userId, codes);
@@ -455,8 +478,8 @@ export class RecipesService {
       this.comments.create({ userId, recipeId, body }),
     );
     await this.redis.del(FEED_CACHE_KEY);
-    return this.listComments(recipeId).then(
-      (all) => all.find((c) => c.id === saved.id)!,
+    return this.listComments(recipeId).then((all) =>
+      all.find((c) => c.id === saved.id)!,
     );
   }
 
@@ -508,7 +531,10 @@ export class RecipesService {
     );
   }
 
-  private async isFollowingAuthor(userId: string | null, authorId: string | null) {
+  private async isFollowingAuthor(
+    userId: string | null,
+    authorId: string | null,
+  ) {
     if (!userId || !authorId || userId === authorId) return false;
     const rows = await this.dataSource.query<{ ok: boolean }[]>(
       `SELECT EXISTS (
@@ -522,7 +548,12 @@ export class RecipesService {
   private async socialFlags(userId: string | null, recipeIds: string[]) {
     const map = new Map<
       string,
-      { likesCount: number; commentsCount: number; isLiked: boolean; isSaved: boolean }
+      {
+        likesCount: number;
+        commentsCount: number;
+        isLiked: boolean;
+        isSaved: boolean;
+      }
     >();
     if (!recipeIds.length) return map;
     const [likeRows, commentRows, userLikes, userSaves] = await Promise.all([
@@ -549,7 +580,9 @@ export class RecipesService {
     ]);
     const liked = new Set(userLikes.map((l) => l.recipeId));
     const saved = new Set(userSaves.map((s) => s.recipeId));
-    const likesCount = new Map(likeRows.map((r) => [r.recipeId, Number(r.count)]));
+    const likesCount = new Map(
+      likeRows.map((r) => [r.recipeId, Number(r.count)]),
+    );
     const commentsCount = new Map(
       commentRows.map((r) => [r.recipeId, Number(r.count)]),
     );

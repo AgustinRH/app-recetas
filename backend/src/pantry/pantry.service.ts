@@ -8,7 +8,8 @@ import { PantryStock } from '../recipes/compute-match';
 @Injectable()
 export class PantryService {
   constructor(
-    @InjectRepository(PantryItem) private readonly pantry: Repository<PantryItem>,
+    @InjectRepository(PantryItem)
+    private readonly pantry: Repository<PantryItem>,
     @InjectRepository(Ingredient)
     private readonly ingredients: Repository<Ingredient>,
   ) {}

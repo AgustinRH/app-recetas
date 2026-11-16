@@ -1,9 +1,16 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, ILike, Repository } from 'typeorm';
 import { Comment } from '../entities/comment.entity';
 import { Recipe } from '../entities/recipe.entity';
-import { REPORT_REASON_LABELS, RecipeReport } from '../entities/recipe-report.entity';
+import {
+  REPORT_REASON_LABELS,
+  RecipeReport,
+} from '../entities/recipe-report.entity';
 import { User } from '../entities/user.entity';
 import { RedisService } from '../redis/redis.service';
 import { SearchService } from '../search/search.service';
@@ -17,7 +24,8 @@ export class AdminService {
     @InjectRepository(User) private readonly users: Repository<User>,
     @InjectRepository(Recipe) private readonly recipes: Repository<Recipe>,
     @InjectRepository(Comment) private readonly comments: Repository<Comment>,
-    @InjectRepository(RecipeReport) private readonly reports: Repository<RecipeReport>,
+    @InjectRepository(RecipeReport)
+    private readonly reports: Repository<RecipeReport>,
     private readonly search: SearchService,
     private readonly redis: RedisService,
   ) {}
@@ -71,7 +79,9 @@ export class AdminService {
     const user = await this.users.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
     if (user.isAdmin) {
-      throw new BadRequestException('No se puede suspender a otro administrador');
+      throw new BadRequestException(
+        'No se puede suspender a otro administrador',
+      );
     }
     user.banned = banned;
     await this.users.save(user);
@@ -120,7 +130,10 @@ export class AdminService {
       ]) {
         await manager.query(`DELETE FROM ${table} WHERE "recipeId" = $1`, [id]);
       }
-      await manager.query(`UPDATE shopping_items SET "recipeId" = NULL WHERE "recipeId" = $1`, [id]);
+      await manager.query(
+        `UPDATE shopping_items SET "recipeId" = NULL WHERE "recipeId" = $1`,
+        [id],
+      );
       await manager.query(`DELETE FROM recipes WHERE id = $1`, [id]);
     });
     await this.search.removeRecipe(id);
@@ -157,7 +170,8 @@ export class AdminService {
 
   async deleteComment(id: string) {
     const result = await this.comments.delete(id);
-    if (!result.affected) throw new NotFoundException('Comentario no encontrado');
+    if (!result.affected)
+      throw new NotFoundException('Comentario no encontrado');
     return { ok: true };
   }
 
@@ -180,7 +194,9 @@ export class AdminService {
       id: report.id,
       reason: report.reason,
       reasonLabel:
-        REPORT_REASON_LABELS[report.reason as keyof typeof REPORT_REASON_LABELS] ?? report.reason,
+        REPORT_REASON_LABELS[
+          report.reason as keyof typeof REPORT_REASON_LABELS
+        ] ?? report.reason,
       note: report.note,
       status: report.status,
       createdAt: report.createdAt,
