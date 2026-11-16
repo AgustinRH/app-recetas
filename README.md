@@ -118,7 +118,25 @@ flutter run --dart-define=API_BASE_URL=http://localhost:3010 --dart-define=USE_D
 
 On an Android emulator, the host API is `http://10.0.2.2:3010`. The production web build uses `API_BASE_URL=https://api.dishtoday.eu` and `USE_DEV_AUTH=false`. Details are in [mobile/README.md](mobile/README.md).
 
-Android and iOS need `google-services.json` and `GoogleService-Info.plist` before Firebase can be used on a device. Those files are not in the repository. Sign in with Apple is present in the iOS UI but is not wired up yet.
+#### Firebase (`firebase_options.dart`)
+
+The repo ships placeholder values in `mobile/lib/firebase_options.dart` so analyze/build work without secrets. The web API key is **public by design**; restrict it by HTTP referrer / domain in Google Cloud — you do not need to rotate it just because it was in git.
+
+Generate a real config with FlutterFire:
+
+```bash
+cd mobile
+dart pub global activate flutterfire_cli
+flutterfire configure
+```
+
+Or copy the example and fill in values from the Firebase console:
+
+```bash
+cp mobile/lib/firebase_options.example.dart mobile/lib/firebase_options.dart
+```
+
+Android and iOS still need `google-services.json` and `GoogleService-Info.plist` (not in the repository). Sign in with Apple is present in the iOS UI but is not wired up yet.
 
 ## Deploy
 

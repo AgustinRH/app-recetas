@@ -25,12 +25,32 @@ docker run --rm -v "$PWD":/work -w /work -e PUB_CACHE=/work/.pub-cache \
 rm -rf .pub-cache
 ```
 
-`build/web` no se versiona. Firebase en web usa `lib/firebase_options.dart`. Android e iOS necesitan sus archivos de Firebase, que no están en el repo.
+`build/web` no se versiona.
+
+### Firebase
+
+`lib/firebase_options.dart` trae placeholders para que el proyecto compile. La API key web de Firebase es pública por diseño: restríngela por dominio en Google Cloud; no hace falta rotarla solo por haber estado en el repo.
+
+Generar la config real:
+
+```bash
+dart pub global activate flutterfire_cli
+flutterfire configure
+```
+
+O copiar el ejemplo y rellenar desde la consola de Firebase:
+
+```bash
+cp lib/firebase_options.example.dart lib/firebase_options.dart
+```
+
+Android e iOS necesitan `google-services.json` y `GoogleService-Info.plist`, que no están en el repo.
 
 ## Estructura
 
 - `lib/config.dart` — URL de la API y flag de auth.
-- `lib/firebase_options.dart` — configuración web de Firebase.
+- `lib/firebase_options.dart` — configuración web de Firebase (placeholders o salida de `flutterfire configure`).
+- `lib/firebase_options.example.dart` — plantilla documentada.
 - `lib/api_client.dart` — llamadas HTTP.
 - `lib/providers.dart` — auth, despensa y feed.
 - `lib/screens/` — login, onboarding, feed, despensa, búsqueda, publicar, perfil y ficha.

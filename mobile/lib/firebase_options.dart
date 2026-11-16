@@ -1,25 +1,20 @@
 import 'package:firebase_core/firebase_core.dart';
 
-/// Firebase web options. Pass real values at build time with --dart-define.
-/// Example:
-/// flutter build web --dart-define=FIREBASE_API_KEY=... --dart-define=FIREBASE_APP_ID=...
+/// Placeholder Firebase web options so the project analyzes/builds without secrets.
+///
+/// For a real project, replace this file by running:
+///   cd mobile && flutterfire configure
+/// or copy [firebase_options.example.dart] and fill in your Firebase console values.
+///
+/// The web API key is public by design; restrict it by domain in Google Cloud.
 class DefaultFirebaseOptions {
-  static FirebaseOptions get web => FirebaseOptions(
-        apiKey: const String.fromEnvironment('FIREBASE_API_KEY'),
-        authDomain: const String.fromEnvironment(
-          'FIREBASE_AUTH_DOMAIN',
-          defaultValue: 'your-project.firebaseapp.com',
-        ),
-        projectId: const String.fromEnvironment(
-          'FIREBASE_PROJECT_ID',
-          defaultValue: 'your-project',
-        ),
-        storageBucket: const String.fromEnvironment(
-          'FIREBASE_STORAGE_BUCKET',
-          defaultValue: 'your-project.appspot.com',
-        ),
-        messagingSenderId: const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
-        appId: const String.fromEnvironment('FIREBASE_APP_ID'),
-        measurementId: const String.fromEnvironment('FIREBASE_MEASUREMENT_ID'),
-      );
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'YOUR_WEB_API_KEY',
+    authDomain: 'YOUR_PROJECT.firebaseapp.com',
+    projectId: 'YOUR_PROJECT',
+    storageBucket: 'YOUR_PROJECT.appspot.com',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    appId: 'YOUR_APP_ID',
+    measurementId: 'YOUR_MEASUREMENT_ID',
+  );
 }
