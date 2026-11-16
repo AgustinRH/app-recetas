@@ -1,18 +1,18 @@
 # DishToday — operación del servidor
 
-Fecha de este corte: **1 octubre 2026**. VPS: `REDACTED_HOST` (`REDACTED`, Helsinki). Repo: `/path/to/app`. Producto: [Plan de App.md](Plan%20de%20App.md).
+Fecha de este corte: **1 octubre 2026**. VPS de laboratorio (Helsinki). El código vive en el directorio de despliegue del servidor (p. ej. `~/dishtoday`). Producto: [Plan de App.md](Plan%20de%20App.md).
 
 La **API del MVP ya está levantada y persistente** (`restart: unless-stopped`). Este archivo ya no es “cómo clonar”; es **qué queda por hacer**.
 
 > **Ojo al volver a clonar el repo en el VPS.** Dos cosas viven fuera de git y se pierden si borras la carpeta:
-> `/path/to/app/.env` (secretos) y `mobile/build/web` (la UI compilada que sirve `dishtoday-web`).
+> el `.env` del proyecto (secretos) y `mobile/build/web` (la UI compilada que sirve `dishtoday-web`).
 > Cómo regenerarlas: [sección 5](#5-si-algo-se-cae).
 
 ---
 
 ## 1. Cómo verlo ahora
 
-El firewall de Hetzner **no abre el puerto 3010** hacia internet. No hace falta abrirlo: todo va por el **80**, que ya está permitido.
+El firewall del proveedor **no abre el puerto 3010** hacia internet. No hace falta abrirlo: todo va por el **80/443**, que ya está permitido.
 
 ### En el navegador (desde tu PC)
 
@@ -21,16 +21,16 @@ El firewall de Hetzner **no abre el puerto 3010** hacia internet. No hace falta 
 - `dishtoday.net`, `dishtoday.online` y los `www` redirigen a `https://dishtoday.eu`.
 - `dishtoday.es` sigue sin abrir: Red.es no ha publicado la delegación. Cuando lo haga, el canónico pasa a ser el `.es`. Detalle en [sección 3.1](#1-dominio-y-https).
 
-El nombre `sslip.io` y `http://REDACTED` siguen funcionando.
+**No uses** el puerto `3010` desde fuera: el firewall lo bloquea y se queda en “no responde”.
 
-**No uses** `http://REDACTED:3010` desde fuera: se queda en “no responde”.
-
-Si quieres que `:3010` funcione desde tu casa, en la consola de Hetzner: **Firewall → regla inbound TCP 3010**. No es necesario para usar la app.
+Si quieres que `:3010` funcione desde tu casa, en la consola del proveedor: **Firewall → regla inbound TCP 3010**. No es necesario para usar la app.
 
 ### Desde terminal (recetas, feed, login demo)
 
+Usa el dominio público (o `http://127.0.0.1:3010` si estás en el propio servidor):
+
 ```bash
-export BASE=http://REDACTED
+export BASE=https://api.dishtoday.eu
 export AUTH="Authorization: Bearer dev:demo@dishtoday.app"
 
 curl "$BASE/health"
@@ -39,14 +39,14 @@ curl -H "$AUTH" "$BASE/recipes/suggested"
 curl -H "$AUTH" "$BASE/feed"
 ```
 
-Usuario demo: `demo@dishtoday.app` (auth de desarrollo; `DEV_AUTH=true`).
+Usuario demo: `demo@dishtoday.app` (auth de desarrollo; `DEV_AUTH=true`). En producción `DEV_AUTH=false` y ese token no vale.
 
 ### Puertos en este VPS
 
 **80/443** los usa Nginx Proxy Manager. DishToday entra por el vhost propio, no como Proxy Host. Caddy sigue en **3010** solo en la red local del servidor.
 
 ```bash
-cd /path/to/app/infra
+cd ~/dishtoday/infra   # o la ruta real del clone en el servidor
 docker compose ps
 docker compose logs -f api
 ```
@@ -58,7 +58,7 @@ docker compose logs -f api
 | Servicio | Contenedor | Acceso |
 | --- | --- | --- |
 | API NestJS | `dishtoday-api` | público `:3010` y `web_proxy` (NPM) |
-| UI web Flutter | `dishtoday-web` | nginx sirviendo `mobile/build/web`, vía NPM en `dishtoday.REDACTED.sslip.io` |
+| UI web Flutter | `dishtoday-web` | nginx sirviendo `mobile/build/web`, vía NPM en los dominios de DishToday |
 | Caddy | `dishtoday-caddy` | `0.0.0.0:3010` → API `:3000` |
 | PostgreSQL 16 | `dishtoday-postgres` | solo `127.0.0.1:5432` |
 | Redis 7 | `dishtoday-redis` | solo `127.0.0.1:6379` |
@@ -73,7 +73,7 @@ docker compose logs -f api
 Comandos de operación:
 
 ```bash
-cd /path/to/app/infra
+cd ~/dishtoday/infra
 docker compose --env-file ../.env ps
 docker compose --env-file ../.env logs -f api
 docker compose --env-file ../.env up -d --build
@@ -89,34 +89,34 @@ Dominios comprados en Arsys (1 oct 2026), con servidores DNS `dns97.servidoresdn
 
 | Dominio | Estado en la zona de Arsys |
 | --- | --- |
-| `dishtoday.es` | Listo: `@`, `www` y `api` con A `REDACTED` y AAAA `REDACTED` |
-| `dishtoday.eu` | `@` y `www` solo con A `REDACTED`. Faltan AAAA y `api` |
+| `dishtoday.es` | Listo: `@`, `www` y `api` con registros A/AAAA apuntando al VPS |
+| `dishtoday.eu` | `@` y `www` con A. Faltan AAAA y `api` |
 | `dishtoday.net` | Sin registros A ni AAAA (la zona existe, vacía) |
-| `dishtoday.online` | Sigue en el parking de Arsys (`217.160.0.202` / `2001:8d8:100f:f000::200`) |
+| `dishtoday.online` | Sigue en el parking de Arsys |
 
 El nombre canónico será `https://dishtoday.es` (app) y `https://api.dishtoday.es` (API). Los otros tres, cuando estén apuntados, redirigen al `.es`.
 
 **Qué resuelve ya en internet** (1 oct 2026, por la tarde): `.eu`, `.net` y `.online`. El `.es` no: Red.es todavía no publica la delegación, así que `dig +short A dishtoday.es` sale vacío aunque Arsys sí conteste.
 
-**HTTPS activo** en los tres que resuelven. Certificado Let's Encrypt en `/path/to/proxy/letsencrypt/live/dishtoday/` (caduca el 30 dic 2026; renovación en `/etc/cron.d/dishtoday-certbot`). La config está en `/path/to/proxy/data/nginx/custom/http.conf`.
+**HTTPS activo** en los tres que resuelven. Certificado Let's Encrypt gestionado junto al proxy (Nginx Proxy Manager / certbot en el host). Renovación vía cron del host.
 
 - `https://dishtoday.eu` → app. `https://api.dishtoday.eu` → API.
 - `.net`, `.online` y todos los `www` redirigen al `.eu`. `api` de esos dos redirige a `api.dishtoday.eu`.
 - `PUBLIC_BASE_URL=https://api.dishtoday.eu`. La web se compila con `--dart-define=API_BASE_URL=https://api.dishtoday.eu`.
 - `dishtoday.es` y `api.dishtoday.es` tienen el `server` de HTTP preparado, sin certificado.
 
-**Cuando `dig +short A dishtoday.es` devuelva `REDACTED`:** ampliar el certificado con esos nombres, pasar el canónico a `https://dishtoday.es` / `https://api.dishtoday.es` y redirigir `.eu`, `.net` y `.online` hacia el `.es`.
+**Cuando `dig +short A dishtoday.es` devuelva la IP pública del VPS:** ampliar el certificado con esos nombres, pasar el canónico a `https://dishtoday.es` / `https://api.dishtoday.es` y redirigir `.eu`, `.net` y `.online` hacia el `.es`.
 
 En Arsys, los A/AAAA de un dominio nuevo salen bloqueados mientras la página de cortesía está activa (filas TXT `_dep_ws_mutex` y `_dcp_ws_mutex`). Se desbloquean en **Comportamiento del dominio**, quitando esa página. No tocar NS, SOA ni esos TXT.
 
-Cuando el dominio esté estable se puede quitar el puerto 3010 público y el host `sslip.io`.
+Cuando el dominio esté estable se puede quitar el puerto 3010 público y cualquier host temporal tipo `sslip.io`.
 
 ### 2. App Flutter
 
 **UI web (ya desplegada).** Se compila en el propio VPS con Docker, sin instalar Flutter:
 
 ```bash
-cd /path/to/app/mobile
+cd ~/dishtoday/mobile
 docker run --rm -v "$PWD":/work -w /work -e PUB_CACHE=/work/.pub-cache \
   ghcr.io/cirruslabs/flutter:stable \
   bash -c 'git config --global --add safe.directory "*" && flutter pub get && flutter build web --release --dart-define=API_BASE_URL=https://api.dishtoday.eu --dart-define=USE_DEV_AUTH=false'
@@ -131,17 +131,17 @@ El `--force-recreate` de `web` es obligatorio si `mobile/build/web` se borró y 
 ```bash
 cd mobile
 flutter pub get
-flutter run --dart-define=API_BASE_URL=http://REDACTED
+flutter run --dart-define=API_BASE_URL=https://api.dishtoday.eu
 ```
 
-Cuando haya HTTPS, cambia `API_BASE_URL` al dominio. La web de producción ya entra con Firebase (`USE_DEV_AUTH=false`). En Android/iOS el demo sigue compilado por defecto hasta que existan `google-services.json` y `GoogleService-Info.plist`; contra esta API el token `dev:` ya no vale.
+La web de producción ya entra con Firebase (`USE_DEV_AUTH=false`). En Android/iOS el demo sigue compilado por defecto hasta que existan `google-services.json` y `GoogleService-Info.plist`; contra esta API el token `dev:` ya no vale.
 
 ### 3. Firebase Auth
 
 Hecho para la web (1 oct 2026):
 
-1. Proyecto `REDACTED_FIREBASE_PROJECT`. Correo/contraseña y Google. Dominio autorizado `dishtoday.eu` (añadir `dishtoday.es` cuando resuelva).
-2. `FIREBASE_PROJECT_ID` y `FIREBASE_SERVICE_ACCOUNT` en `.env`. El JSON no está en el repo (`.gitignore` ignora `*firebase-adminsdk*.json`; copia en `/path/to/secrets/`).
+1. Proyecto Firebase del producto. Correo/contraseña y Google. Dominio autorizado `dishtoday.eu` (añadir `dishtoday.es` cuando resuelva).
+2. `FIREBASE_PROJECT_ID` y `FIREBASE_SERVICE_ACCOUNT` en `.env`. El JSON no está en el repo (`.gitignore` ignora `*firebase-adminsdk*.json`; copia en un directorio de secretos del host, fuera del clone).
 3. La web usa `mobile/lib/firebase_options.dart`. En móvil faltan `google-services.json` y `GoogleService-Info.plist`.
 4. `DEV_AUTH=false` en el servidor. Un id token de Firebase llega a `GET /me` y crea el perfil.
 5. La web se compila con `--dart-define=USE_DEV_AUTH=false`.
@@ -150,10 +150,10 @@ Apple Sign-In sigue pendiente de una cuenta de Apple Developer.
 
 ### 4. Endurecer secretos y backups
 
-- Cambiar usuario/clave de Postgres en `infra/docker-compose.yml` **y** `DATABASE_URL` a la vez (hoy son `dishtoday` / `dishtoday`).
+- Definir `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` y `DATABASE_URL` en `.env` (el compose ya no lleva la clave en claro). Si la clave antigua llegó a estar en git, **rótala en el servidor**.
 - Rotar `TYPESENSE_API_KEY` (está en `.env`; recrear `typesense` + `api`).
 - Backups periódicos del volumen `infra_postgres_data` (y `infra_api_uploads` si hay fotos).
-- Guardar una copia de `/path/to/app/.env` fuera del repo (p. ej. `/path/to/backups/dishtoday.env`): está en `.gitignore` y es lo único que tiene la `TYPESENSE_API_KEY`.
+- Guardar una copia del `.env` fuera del repo (p. ej. en un directorio de backups del root): está en `.gitignore` y es lo único que tiene la `TYPESENSE_API_KEY`.
 - Cuando el esquema no cambie: migraciones TypeORM en lugar de `synchronize`.
 
 ### 5. Almacenamiento de fotos (opcional)
@@ -171,7 +171,7 @@ El plan pide **500–1000 recetas** abiertas antes de lanzar. El catálogo de `b
 Ingredientes: el catálogo base está en `backend/src/seed/seed-data.ts` (~125). Para añadir más, amplía esa lista y ejecuta en el VPS:
 
 ```bash
-cd /path/to/app/infra
+cd ~/dishtoday/infra
 docker compose --env-file ../.env up -d --build api
 docker compose --env-file ../.env exec api node dist/scripts/sync-ingredients.js
 ```
@@ -204,14 +204,14 @@ Cuando el MVP se use de verdad, según [Plan de App.md](Plan%20de%20App.md):
 | URL de la API en el móvil | `mobile/lib/config.dart` |
 | Compose / servicios | `infra/docker-compose.yml` |
 | Proxy en :3010 | `infra/Caddyfile` |
-| Host HTTP en NPM | `/path/to/proxy/data/nginx/custom/http.conf` |
+| Host HTTP en NPM | config custom del proxy en el host (fuera del repo) |
 
 ---
 
 ## 5. Si algo se cae
 
 ```bash
-cd /path/to/app/infra
+cd ~/dishtoday/infra
 docker compose --env-file ../.env ps
 docker compose --env-file ../.env logs api postgres caddy
 curl http://127.0.0.1:3010/health
@@ -221,7 +221,7 @@ Errores habituales: `DATABASE_URL` con `localhost` dentro del contenedor `api` (
 
 ### Falta `.env` (`couldn't find env file`)
 
-Pasa si se volvió a clonar el repo. `.env` no está en git. Copia `.env.example` a `.env` y rellena los secretos (en prod: `NODE_ENV=production`, `DB_SYNC=false`, `SEED_ON_START=false`, `MINIO_ENDPOINT=` vacío, `PUBLIC_BASE_URL=https://api.dishtoday.eu`, `DEV_AUTH=false`, `FIREBASE_PROJECT_ID` y `FIREBASE_SERVICE_ACCOUNT`). `DATABASE_URL`, `REDIS_URL` y `TYPESENSE_HOST` los sobreescribe el compose. Luego `chmod 600 .env`. La cuenta de servicio de Firebase no se commitea.
+Pasa si se volvió a clonar el repo. `.env` no está en git. Copia `.env.example` a `.env` y rellena los secretos (en prod: `NODE_ENV=production`, `DB_SYNC=false`, `SEED_ON_START=false`, `MINIO_ENDPOINT=` vacío, `PUBLIC_BASE_URL=https://api.dishtoday.eu`, `DEV_AUTH=false`, `FIREBASE_PROJECT_ID` y `FIREBASE_SERVICE_ACCOUNT`, más `POSTGRES_*` y `DATABASE_URL`). `REDIS_URL` y `TYPESENSE_HOST` los sobreescribe el compose. Luego `chmod 600 .env`. La cuenta de servicio de Firebase no se commitea.
 
 ### La UI web devuelve 403
 

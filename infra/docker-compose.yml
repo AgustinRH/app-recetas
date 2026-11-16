@@ -4,15 +4,15 @@ services:
     container_name: dishtoday-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: dishtoday
-      POSTGRES_PASSWORD: REDACTED
-      POSTGRES_DB: dishtoday
+      POSTGRES_USER: ${POSTGRES_USER:-dishtoday}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-dishtoday}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dishtoday"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -55,14 +55,14 @@ services:
     environment:
       NODE_ENV: production
       DB_TYPE: postgres
-      DATABASE_URL: postgres://dishtoday:REDACTED@postgres:5432/dishtoday
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
       REDIS_URL: redis://redis:6379
       TYPESENSE_HOST: typesense
       TYPESENSE_PORT: 8108
       TYPESENSE_PROTOCOL: http
       TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-xyz}
       MINIO_ENDPOINT: ""
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://REDACTED}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://api.dishtoday.eu}
     volumes:
       - api_uploads:/app/uploads
     depends_on:
@@ -98,7 +98,7 @@ services:
     depends_on:
       - api
     ports:
-      # 80/443 ya los usa Nginx Proxy Manager en este VPS
+      # 80/443 ya los usa Nginx Proxy Manager en el host
       - "3010:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro

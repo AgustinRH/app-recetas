@@ -8,6 +8,12 @@ A home-cooking app that matches your pantry — name, quantity and unit — agai
 
 **Status:** Public MVP on the web, with real email/password and Google sign-in (Firebase). `dishtoday.es` is reserved as the canonical domain once the `.es` registration is published; until then the site lives at `.eu`.
 
+## Screenshots
+
+| Feed | Pantry | Recipe |
+| --- | --- | --- |
+| ![Feed](docs/screenshots/01-feed.jpg) | ![Pantry](docs/screenshots/02-pantry.jpg) | ![Recipe](docs/screenshots/03-recipe.jpg) |
+
 ## Why
 
 You open the fridge and are not sure what to cook. DishToday compares what you have with each recipe and sorts the result by match percentage. Missing items can be added to the shopping list in one step; once you mark them as bought, they go back into the pantry.
