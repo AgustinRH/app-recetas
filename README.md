@@ -1,5 +1,7 @@
 # DishToday
 
+![CI](https://github.com/AgustinRH/dishtoday/actions/workflows/ci.yml/badge.svg)
+
 **What can you cook with what you already have?**
 
 A home-cooking app that matches your pantry — name, quantity and unit — against a recipe catalogue. It is not a static cookbook: it ranks what you can make now, lists what you are missing, and moves the gaps into a shopping list.
